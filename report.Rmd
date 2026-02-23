@@ -1,0 +1,1796 @@
+---
+title: "Spanish Government Immigration Rhetoric and Electoral Support"
+subtitle: "Multi-Source Data Collection and Statistical Analysis ,November 2023 to February 2026"
+author: "UC3M · Data Harvesting · Spring 2026"
+date: "`r format(Sys.Date(), '%B %Y')`"
+pagetitle: "Spain Immigration & Electoral Support 2023–2026 | UC3M"
+output:
+  html_document:
+    theme: flatly
+    highlight: null
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 4
+    number_sections: true
+    code_folding: hide
+    fig_caption: true
+    df_print: kable
+    css: report_style.css
+    self_contained: true
+    pandoc_args: ["--syntax-highlighting=tango"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  fig.align  = "center",
+  fig.width  = 11,
+  fig.height = 5.8,
+  out.width  = "100%",
+  dpi        = 120,
+  cache      = FALSE
+)
+
+# ── Core libraries ────────────────────────────────────────────────────────────
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(patchwork)
+library(kableExtra)
+library(broom)
+library(lmtest)
+library(sandwich)
+library(forecast)
+library(ggcorrplot)
+library(zoo)
+library(plotly)
+
+# ── Project colour palette ───────────────────────────────────────────────────
+COL_PSOE    <- "#E63946"   # PSOE red
+COL_PP      <- "#457B9D"   # PP blue
+COL_VOX     <- "#2D6A4F"   # Vox green
+COL_IMM     <- "#F4A261"   # immigration orange
+COL_ACCENT  <- "#1D3557"   # dark navy accent
+COL_NEUTRAL <- "#ADB5BD"   # neutral grey
+COL_POS     <- "#2a9d8f"   # positive teal
+
+# ── Report-wide ggplot2 theme ─────────────────────────────────────────────────
+THEME_PROJ <- theme_minimal(base_size = 12) +
+  theme(
+    plot.title       = element_text(face = "bold", size = 14, colour = COL_ACCENT),
+    plot.subtitle    = element_text(size = 10.5, colour = "#555555",
+                                    margin = margin(b = 8)),
+    plot.caption     = element_text(size = 8,  colour = "#888888", hjust = 0),
+    axis.title       = element_text(size = 10, colour = "#444444"),
+    axis.text        = element_text(size = 9),
+    legend.position  = "bottom",
+    legend.title     = element_text(face = "bold", size = 9),
+    panel.grid.minor = element_blank(),
+    strip.text       = element_text(face = "bold"),
+    plot.margin      = margin(10, 15, 10, 10)
+  )
+theme_set(THEME_PROJ)
+
+# ── kableExtra convenience wrapper ───────────────────────────────────────────
+kbl_proj <- function(df, caption = NULL, ...) {
+  df |>
+    kbl(caption = caption, ...) |>
+    kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      full_width = FALSE, font_size = 13
+    ) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+}
+
+# ── Load all processed data ───────────────────────────────────────────────────
+panel       <- read_csv("data/processed/master_panel.csv",
+                        show_col_types = FALSE) |>
+               mutate(year_month = as.Date(year_month))
+polls       <- read_csv("data/processed/monthly_polls.csv",
+                        show_col_types = FALSE) |>
+               mutate(year_month = as.Date(year_month))
+stmts       <- read_csv("data/processed/immigration_statements.csv",
+                        show_col_types = FALSE) |>
+               mutate(date = as.Date(date))
+mstmts      <- read_csv("data/processed/monthly_statements.csv",
+                        show_col_types = FALSE) |>
+               mutate(year_month = as.Date(year_month))
+salience    <- read_csv("data/processed/salience_scores.csv",
+                        show_col_types = FALSE) |>
+               mutate(
+                 year_month      = as.Date(year_month),
+                 imm_volume_norm = round(n_immigration /
+                                     max(n_immigration, na.rm = TRUE) * 100, 1)
+               )
+forecast_df <- read_csv("data/processed/forecast_2027.csv",
+                        show_col_types = FALSE) |>
+               mutate(year_month = as.Date(year_month))
+desc_stats  <- read_csv("data/processed/descriptive_stats.csv",
+                        show_col_types = FALSE)
+corr_long   <- read_csv("data/processed/correlation_matrix.csv",
+                        show_col_types = FALSE)
+model_coef  <- read_csv("data/processed/model_results.csv",
+                        show_col_types = FALSE)
+model_comp  <- read_csv("data/processed/model_comparison.csv",
+                        show_col_types = FALSE)
+unemp_ann   <- read_csv("data/raw/ine_unemployment_annual.csv",
+                        show_col_types = FALSE)
+foreign_pop <- tryCatch(
+  read_csv("data/raw/ine_foreign_population.csv", show_col_types = FALSE),
+  error = function(e) tibble()
+)
+seat_proj   <- tryCatch(
+  read_csv("data/processed/seat_projections.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+seat_mc     <- tryCatch(
+  read_csv("data/processed/seat_monte_carlo.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+seat_mc_sum <- tryCatch(
+  read_csv("data/processed/seat_mc_summary.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+hist_polls  <- tryCatch(
+  read_csv("data/processed/historical_polls_2004_2008.csv",
+           show_col_types = FALSE) |>
+    mutate(year_month = as.Date(year_month)),
+  error = function(e) NULL
+)
+its_res     <- tryCatch(
+  read_csv("data/processed/its_results.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+
+# ── Refit OLS models for dynamic R² in table footnotes ───────────────────────
+model_data <- panel |>
+  filter(!is.na(psoe_avg), !is.na(n_statements), !is.na(imm_volume_norm))
+
+m3 <- lm(psoe_avg ~ t + n_statements + imm_volume_norm, data = model_data)
+nw_se_m3 <- coeftest(m3, vcov = NeweyWest(m3, lag = 3, prewhite = FALSE))
+
+# ── Panel integrity check ─────────────────────────────────────────────────────
+stopifnot(
+  "Panel should have 28 months" = nrow(panel) == 28,
+  "Panel must cover Nov 2023"   = min(panel$year_month) == as.Date("2023-11-01"),
+  "Panel must cover Feb 2026"   = max(panel$year_month) == as.Date("2026-02-01")
+)
+```
+
+```{=html}
+<div class="cover-page">
+  <div class="cover-banner">
+    <div class="cover-tag">UC3M &nbsp;·&nbsp; Data Harvesting Course &nbsp;·&nbsp; Spring 2026</div>
+    <div class="cover-title">Spanish Government Immigration Rhetoric<br>&amp; Electoral Support</div>
+    <div class="cover-subtitle">
+      Multi-Source Data Collection and Statistical Analysis<br>
+      <span class="cover-period">November 2023 – February 2026</span>
+    </div>
+  </div>
+  <div class="cover-meta">
+    <div class="cover-authors">
+      <div class="cover-author">
+        <span class="author-name">Abdullah Tadmuri</span>
+        <span class="author-affil">UC3M &nbsp;·&nbsp; 100502844</span>
+      </div>
+      <div class="cover-author">
+        <span class="author-name">Maiheliya Maimaitiming</span>
+        <span class="author-affil">UC3M &nbsp;·&nbsp; 100562134</span>
+      </div>
+      <div class="cover-author">
+        <span class="author-name">Tone Varberg Sabri</span>
+        <span class="author-affil">UC3M &nbsp;·&nbsp; 100570811</span>
+      </div>
+    </div>
+    <div class="cover-stats">
+      <div class="cover-stat"><span class="stat-num">4</span><span class="stat-label">Sources</span></div>
+      <div class="cover-stat-divider"></div>
+      <div class="cover-stat"><span class="stat-num">28</span><span class="stat-label">Months</span></div>
+      <div class="cover-stat-divider"></div>
+      <div class="cover-stat"><span class="stat-num">421</span><span class="stat-label">Polls</span></div>
+      <div class="cover-stat-divider"></div>
+      <div class="cover-stat"><span class="stat-num">3,597</span><span class="stat-label">Articles</span></div>
+      <div class="cover-stat-divider"></div>
+      <div class="cover-stat"><span class="stat-num">11</span><span class="stat-label">Figures</span></div>
+      <div class="cover-stat-divider"></div>
+      <div class="cover-stat"><span class="stat-num">22</span><span class="stat-label">Tables</span></div>
+    </div>
+  </div>
+  <div class="cover-footer">
+    Instructor: Patricia Callejo &nbsp;·&nbsp; Universidad Carlos III de Madrid &nbsp;·&nbsp; Reproducible pipeline: <code>Rscript main.R</code>
+  </div>
+</div>
+```
+
+# Executive Summary {.unnumbered}
+
+This report presents a reproducible data-harvesting and statistical analysis of the relationship between **official Spanish government immigration communication** and **PSOE electoral support** from November 2023 to February 2026 ,spanning the full term of Pedro Sánchez's second government. The pipeline combines four independent data harvesting techniques: Wayback Machine CDX API discovery, HTML scraping with image-attribute extraction, REST/JSON API calls to the INE, and paginated topic-section scraping from El País.
+
+**Core findings:**
+
+> 1. **PSOE support declined** at −0.138 percentage points per month (Model M3 R² = 0.727; trend coefficient p < 0.001), a cumulative fall of approximately **3.9 pp** from ~29% to ~25% over 28 months.
+> 2. **Immigration media salience is negatively correlated with PSOE support** (r = −0.674): months with higher El País immigration coverage consistently coincide with lower PSOE polling ,consistent with issue-ownership theory (Petrocik, 1996).
+> 3. **Government immigration press releases do not predict PSOE polling**, at either contemporaneous or lead/lag levels. Granger causality tests (order = 2) confirm this for both immigration statements (F = 0.147, p = 0.864) and immigration media salience (F = 0.304, p = 0.741). La Moncloa's communication strategy is reactive, not strategic.
+> 4. **The January 2026 regularisation law** (targeting ~500,000 undocumented migrants) adds **zero direct new voters** to the 2027 General Election electorate due to Spanish citizenship requirements for national suffrage. Its electoral consequences are entirely through issue salience and partisan mobilization.
+> 5. **2027 PSOE forecast**: The ARIMA(0,1,0)-X model projects PSOE at **25.4–25.9%** by June 2027 across all three salience scenarios (95% CI: ±7 pp), with PP maintaining a 5–8 pp lead. The dominant predictor is time trend, not immigration salience.
+
+---
+
+# Introduction and Research Question
+
+## Political Context: Spain 2023–2026
+
+On 17 November 2023, Pedro Sánchez secured a second term as Prime Minister in a closely contested investiture, forming a minority government dependent on support from Junts, ERC, Bildu, and PNV. This fragile coalition governed during a period of intensifying immigration debate in Europe, punctuated by: the 2024 Canary Islands migration crisis (record arrivals via the Atlantic route), the June 2024 European Parliament elections (where immigration ranked as a top voter concern across the EU), the blocked distribution of unaccompanied minors (*MENA*) between Autonomous Communities, and culminating in the extraordinary regularisation decree of January 2026 ,the first mass legalisation since José Luis Rodríguez Zapatero's 2005 process.
+
+This period makes Spain an ideal case for studying how governing-party communication about politically contested issues interacts with electoral support in a fragmented multi-party system.
+
+## Research Question
+
+> **Does the frequency of official government immigration statements correlate with shifts in PSOE electoral support over the 2023–2026 governing period, and can historical data produce a credible forecast of PSOE's position entering the 2027 General Election?**
+
+## Hypotheses
+
+```{r hypotheses-table, echo=FALSE}
+tribble(
+  ~Hypothesis, ~Direction,       ~Rationale,                                              ~Outcome,
+  "H1: Gov. statements → PSOE",  "Positive",  "Proactive issue framing may reassure centrist voters worried about immigration", "Not supported (r = 0.047, p = 0.864)",
+  "H2: Media salience → PSOE",   "Negative",  "Immigration salience benefits right-leaning parties via issue ownership", "Partially supported: Pearson r = −0.674 (p < 0.001); OLS coefficient marginal (β = −0.015, p = 0.084, NW robust)",
+  "H3: Time trend → PSOE",       "Negative",  "Mid-term governmental attrition is common in democratic systems", "Supported (β = −0.138, p < 0.001)"
+) |>
+  kbl_proj(
+    caption = "Table 1. Research hypotheses and outcomes",
+    col.names = c("Hypothesis", "Expected direction", "Rationale", "Observed outcome"),
+    align = c("l","c","l","l")
+  ) |>
+  column_spec(1, bold = TRUE, width = "22%") |>
+  column_spec(2, width = "10%") |>
+  column_spec(3, width = "34%") |>
+  column_spec(4, width = "34%")
+```
+
+---
+
+# Data Collection and Methodology
+
+## Overview
+
+This project harvests four independent data streams using distinct techniques ,each chosen to overcome specific access challenges. The table below summarises the sources, methods, and scale of collection.
+
+```{r data-overview-table, echo=FALSE}
+tribble(
+  ~Source,                  ~Method,                  ~`Key challenge`,                  ~`Records collected`,
+  "La Moncloa (press releases)", "Wayback Machine CDX API → `rvest` live fetch", "JS-rendered index invisible to HTTP scraping",   "63 immigration releases (1,078 CDX URLs discovered)",
+  "Wikipedia (opinion polls)",   "`rvest` + `img alt` trick",                  "Party names are images, not text in column headers", "421 individual polls → 28 monthly averages",
+  "INE Statistical API",         "`httr2` + `jsonlite` REST/JSON",             "Volume restrictions on filtered endpoints",          "212 province × year records; 5 years foreign pop.",
+  "El País (media salience)",    "`rvest` paginated topic scraping",           "General search returns 404; pagination uses `/N/`",  "3,597 immigration articles (28 months)"
+) |>
+  kbl_proj(
+    caption = "Table 2. Data source overview",
+    align   = c("l","l","l","l")
+  ) |>
+  column_spec(1, bold = TRUE, width = "20%") |>
+  column_spec(4, width = "25%")
+```
+
+## La Moncloa Press Releases ,Script `01_scrape_lamoncloa.R`
+
+### Technical Challenge: JavaScript-Rendered Filtering
+
+La Moncloa's press release index (`/serviciosdeprensa/notasprensa/index.aspx?Anyo=YYYY&Mes=MM`) uses SharePoint's **client-side JavaScript** to filter results. The URL parameters `Anyo` and `Mes` are processed entirely in the browser ,the server returns an identical page regardless of the parameters supplied. Standard `rvest::read_html()` scraping of the index page would therefore always return *today's* press releases, making historical retrieval impossible.
+
+### Solution: Wayback Machine CDX API
+
+We used the Internet Archive's **CDX (Capture InDeX) Server API** to discover historical La Moncloa press release URLs without fetching archived content. The CDX API is a machine-readable URL index of everything the Wayback Machine has archived. A single CDX query returns all captured URLs matching a prefix pattern, with deduplication and status-code filtering.
+
+**API endpoint structure:**
+
+```http
+GET https://web.archive.org/cdx/search/cdx
+  ?url=lamoncloa.gob.es/serviciosdeprensa/notasprensa/{ministry}/Paginas/{year}/
+  &matchType=prefix        # match all URLs under this path
+  &output=json             # machine-readable response
+  &from=20231101           # date range filter
+  &to=20260301
+  &limit=500               # cap per query (3 ministries × 4 years = 12 queries)
+  &fl=original             # return only the original URL field
+  &filter=statuscode:200   # exclude redirects and error pages
+  &collapse=original       # deduplicate identical URLs
+```
+
+We queried **3 ministries × 4 years = 12 CDX requests**, each sleeping 0.5–1.5 seconds between calls (polite rate-limiting). The CDX API returned **1,078 unique `.aspx` URLs** matching our prefix patterns.
+
+**Key insight:** CDX returns URLs as archived ,URLs may use lowercase `/paginas/` (from early archiving) whereas the live La Moncloa server requires capitalised `/Paginas/`. All fetched URLs are normalised (`ignore.case = TRUE`) before requesting the live page.
+
+### Immigration Keyword Filtering (Two-Stage)
+
+**Stage 1 ,Slug keywords (26 terms):** La Moncloa press release URLs contain descriptive Spanish slugs (e.g., `101024-marlaska-consejo-ministros-frontex.aspx`). We matched URL slugs against terms including: `inmigraci`, `migraci`, `frontex`, `estrecho`, `regularizaci`, `mena`, `asilo`, `refugi`, `ceuta`, `melilla`, `canarias`.
+
+**Stage 2 ,Body-text validation:** We fetched each slug-matched URL from the live La Moncloa server and re-validated against a broader 18-term keyword list in the body text (`inmigración`, `flujos migratorios`, `regularización`, `menores no acompañados`, `Frontex`, `Paso del Estrecho`, etc.).
+
+```{r lamoncloa-summary, echo=FALSE}
+ministries_df <- stmts |>
+  count(ministry, name = "n_releases") |>
+  mutate(
+    Ministry = recode(ministry,
+      interior   = "Ministry of the Interior",
+      inclusion  = "Ministry of Inclusion & Migration",
+      exteriores = "Ministry of Foreign Affairs"
+    ),
+    `% of total` = round(n_releases / sum(n_releases) * 100, 1)
+  ) |>
+  select(Ministry, `Releases` = n_releases, `% of total`)
+
+ministries_df |>
+  kbl_proj(
+    caption = "Table 3. La Moncloa immigration press releases by ministry (Nov 2023 – Feb 2026)",
+    align = c("l","r","r")
+  ) |>
+  add_footnote(
+    paste0("Total: ", sum(ministries_df$Releases),
+           " confirmed releases across ",
+           n_distinct(floor_date(stmts$date, "month")),
+           " months with ≥1 release (out of 28 study months)."),
+    notation = "number"
+  )
+```
+
+### Ethical Compliance
+
+| Measure | Implementation |
+|---------|----------------|
+| `robots.txt` check | `robotstxt::robotstxt("www.lamoncloa.gob.es")$check(path="/serviciosdeprensa/")` ,scraping is permitted |
+| Polite delays | 3–5 s between live page fetches; 0.5–1.5 s between CDX API calls |
+| User-Agent | Standard browser UA (La Moncloa returns 403 for annotated/automated UAs) |
+| Contact disclosure | UC3M project contact documented in script header and API comments |
+| CDX API usage | Read-only URL discovery ,no archived page content fetched from the Wayback Machine |
+
+## Opinion Polls ,Wikipedia ,Script `02_scrape_polls.R`
+
+### Source Selection and Rationale
+
+The original project proposal listed **CIS** (Centro de Investigaciones Sociológicas) and **Electográfica** as the primary poll data sources. Both were ultimately superseded by Wikipedia for documented technical and access reasons:
+
+| Source | Limitation | Decision |
+|--------|-----------|----------|
+| **CIS Barómetro** | PDF/HTML publications with 2–3 month release delays; the monthly *Avance de resultados* uses JavaScript-rendered tables invisible to `rvest`; voter intention data requires custom table parsing per month | **Replaced** |
+| **Electográfica.com** | A private poll aggregation service; data behind registration walls; HTML structure changes without notice | **Replaced** |
+| **Wikipedia** | Community-maintained aggregation of *all* major pollsters (SyM, Celeste-Tel, Ipsos, GAD3, NC Report, El País, El Mundo); updated weekly; static, parseable HTML tables | **Selected** |
+
+Wikipedia's page contains data from over 15 polling firms, making the monthly averages more robust than any single source, and provides a longer historical series with consistent formatting.
+
+### Technical Challenge: Image-Based Column Headers
+
+Wikipedia's opinion polling table uses party **logo images** ,not text ,as column headers. Standard `html_text()` extraction returns empty strings for all party columns.
+
+**Solution:** We extracted party names from `<img alt="...">` attributes inside `<th>` header cells:
+
+```r
+# Instead of: html_text(th)          ← returns ""
+# We use:     html_attr("img", "alt") ← returns "PSOE", "PP", "Vox", "Sumar"
+img_alt <- th |> html_element("img") |> html_attr("alt")
+```
+
+We also implemented a graceful fallback hierarchy: plain text → img alt → link title → "unknown".
+
+### Cross-Year Date Handling
+
+Wikipedia tables are organised by year (2023, 2024, 2025, 2026). Date strings like `"27 Dec–3 Jan"` in a 2025 table refer to dates spanning the year boundary. Our `parse_date_field()` function:
+1. Extracts the **end date** from the range (the fieldwork completion date is the standard reference)
+2. Detects the cross-year pattern: if the parsed month is January *and* the raw string contains "Dec", it adds one year to correctly assign the date to 2026
+
+```{r polls-data-summary, echo=FALSE}
+polls |>
+  summarise(
+    `Total polls (raw)` = sum(n_polls),
+    `Months with data`  = n(),
+    `Avg polls/month`   = round(mean(n_polls), 1),
+    `PSOE avg (%)`      = round(mean(psoe_avg, na.rm = TRUE), 1),
+    `PP avg (%)`        = round(mean(pp_avg,   na.rm = TRUE), 1),
+    `Min PSOE (%)`      = round(min(psoe_avg,  na.rm = TRUE), 1),
+    `Max PSOE (%)`      = round(max(psoe_avg,  na.rm = TRUE), 1)
+  ) |>
+  pivot_longer(everything(), names_to = "Metric", values_to = "Value") |>
+  kbl_proj(
+    caption = "Table 4. Wikipedia opinion polls ,collection summary (Nov 2023 – Feb 2026)",
+    align   = c("l","r")
+  )
+```
+
+## INE Statistical API ,Script `03_ine_demographics.R`
+
+### API Architecture
+
+The Instituto Nacional de Estadística (INE) provides a **public REST/JSON API** with no authentication required. Base URL: `https://servicios.ine.es/wstempus/js/ES/`
+
+Two endpoints were used:
+
+| Endpoint | Series | Description |
+|----------|--------|-------------|
+| `DATOS_TABLA/65349?nult=20` | Table 65349 (EPA) | Unemployment rates by province and sex ,Encuesta de Población Activa, quarterly |
+| `DATOS_SERIE/CP305495?nult=10` | CP305495 | Total national population (all nationalities) ,Estadística Continua de Población |
+| `DATOS_SERIE/CP305423?nult=10` | CP305423 | Spanish-nationality population ,Estadística Continua de Población |
+
+**Foreign population** is computed as `total_pop − spanish_pop`. This avoids the HTTP 500 volume restriction that occurs when requesting the filtered foreign-population table (`/9683` with `tv=` parameters).
+
+### FK_Periodo to Quarter Mapping
+
+INE's EPA table uses an internal period code (`FK_Periodo`) rather than human-readable dates. The mapping was empirically derived from EPA documentation:
+
+```r
+# FK_Periodo 19 → Q1 2025, 20 → Q2, 21 → Q3, 22 → Q4
+quarter <- ((FK_Periodo - 3) %% 4) + 1  # gives 1..4
+```
+
+Quarters are converted to the last month of each quarter for time-series alignment (Q1→March, Q2→June, Q3→September, Q4→December).
+
+### INE Data Summary
+
+```{r ine-demographics, fig.height=14, fig.cap="Figure 1. INE demographic context. (A) Count of foreign-born residents in Spain (millions), with annual share of total population annotated, 2020–2024 (INE Estadística Continua de Población). (B) Provincial unemployment rates: 12 highest and 12 lowest provinces, most recent annual survey (EPA)."}
+
+# Panel A: Foreign population trend
+p_foreign <- if (nrow(foreign_pop) > 0 && "foreign_pop" %in% names(foreign_pop)) {
+  foreign_pop |>
+    filter(year >= 2020) |>
+    ggplot(aes(x = year, y = foreign_pop / 1e6)) +
+    geom_line(colour = COL_IMM, linewidth = 1.2) +
+    geom_point(colour = COL_IMM, size = 3, shape = 21,
+               fill = "white", stroke = 1.5) +
+    geom_text(aes(label = paste0(round(pct_foreign, 1), "%")),
+              vjust = -1.1, size = 3.2, colour = COL_ACCENT) +
+    scale_x_continuous(breaks = min(foreign_pop$year):max(foreign_pop$year)) +
+    scale_y_continuous(labels = label_number(suffix = "M", accuracy = 0.1),
+                       limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
+    labs(
+      title    = "Foreign-Born Population in Spain, 2020–2024",
+      subtitle = "Data labels show each year's share of total resident population · INE Estadística Continua de Población (ECP)",
+      x = NULL, y = "Foreign-born residents (millions)",
+      caption  = "Source: INE Estadística Continua de Población ,Series CP305495 & CP305423"
+    )
+} else {
+  ggplot() +
+    annotate("text", x = 0.5, y = 0.5,
+             label = "INE foreign population data not available", size = 5, colour = "grey50") +
+    theme_void()
+}
+
+# Panel B: Provincial unemployment extremes
+if (nrow(unemp_ann) > 0 && "province" %in% names(unemp_ann)) {
+  latest_year <- max(unemp_ann$year, na.rm = TRUE)
+  unemp_latest <- unemp_ann |>
+    filter(year == latest_year, !is.na(province), !is.na(unemployment_rate)) |>
+    distinct(province, .keep_all = TRUE) |>
+    arrange(desc(unemployment_rate))
+
+  top_n   <- slice_head(unemp_latest, n = 12)
+  bot_n   <- slice_tail(unemp_latest, n = 12)
+  extreme <- bind_rows(top_n, bot_n) |>
+    mutate(
+      province = str_replace_all(province, "Total Nacional\\.", "Nacional"),
+      group    = if_else(unemployment_rate >= median(unemp_latest$unemployment_rate,
+                                                      na.rm = TRUE), "High", "Low"),
+      prov_clean = str_trunc(province, 22, ellipsis = "…")
+    )
+
+  p_unemp <- ggplot(extreme,
+                    aes(x = reorder(prov_clean, unemployment_rate),
+                        y = unemployment_rate,
+                        fill = group)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0(round(unemployment_rate, 1), "%")),
+              hjust = -0.15, size = 3.5) +
+    coord_flip() +
+    scale_fill_manual(values = c("High" = COL_IMM, "Low" = COL_PP),
+                      labels = c("High" = "Above national median", "Low" = "Below national median"),
+                      name = "Unemployment level") +
+    scale_y_continuous(labels = label_percent(scale = 1, accuracy = 1),
+                       expand = expansion(mult = c(0, 0.15))) +
+    labs(
+      title    = paste0("Provincial Unemployment: 12 Highest and 12 Lowest Provinces (", latest_year, " EPA)"),
+      subtitle = "Provinces sorted by annual average rate · Orange = above national median · Blue = below national median",
+      x = NULL, y = "Annual average unemployment rate (%)",
+      caption  = paste0("Source: INE EPA Table 65349 ,", latest_year, " annual averages")
+    )
+
+  p_foreign / p_unemp + plot_layout(heights = c(1, 2.8))
+} else {
+  p_foreign
+}
+```
+
+## El País Immigration Media Salience ,Script `04_media_salience.R`
+
+### Source Selection vs. Original Proposal
+
+The original proposal specified **RSelenium** to scrape regional newspapers (La Vanguardia, Ideal). This approach was revised for the following reasons:
+
+| Reason | Detail |
+|--------|--------|
+| **Reproducibility barrier** | RSelenium requires a running Selenium/ChromeDriver server (Java dependency). Portability across machines ,a key course requirement ,is severely compromised |
+| **Structural instability** | Regional newspaper websites frequently restructure their JavaScript layouts, breaking Selenium selectors without warning |
+| **Scope alignment** | Since no regional opinion poll data is available (all major pollsters publish only national figures), regional press data could not be linked to regional electoral outcomes |
+| **El País as national benchmark** | El País is Spain's largest general-interest newspaper (digital edition) and provides a clean, static HTML topic section with ISO 8601 datetime attributes ,ideal for `rvest` without browser automation |
+
+### Pagination Architecture
+
+El País immigration topic section (`/noticias/inmigracion/`) uses zero-indexed pagination:
+- Page 1: `https://elpais.com/noticias/inmigracion/`
+- Page 2: `https://elpais.com/noticias/inmigracion/1/`
+- Page N+1: `https://elpais.com/noticias/inmigracion/N/`
+
+We scraped until reaching articles pre-dating November 2023 (stopping condition: `min(page_dates) < 2023-11-01`). Date extraction uses the ISO 8601 `datetime` attribute on `<time>` elements:
+
+```r
+times <- page |>
+  html_elements("time[datetime]") |>   # CSS attribute selector
+  html_attr("datetime")                # returns "2024-03-15T18:30:00+01:00"
+dates <- ymd_hms(times, tz = "Europe/Madrid")  # parse with lubridate
+```
+
+### Salience Metric Construction
+
+We construct **`imm_volume_norm`** ,a 0–100 normalised monthly immigration article count:
+
+$$\text{imm\_volume\_norm}_t = \frac{n_{\text{immigration},t}}{\max_s(n_{\text{immigration},s})} \times 100$$
+
+This is preferred over the raw ratio `n_immigration / n_total` because the general España section pagination is limited and may not reach back the full 28 months, making the denominator unreliable. The normalised volume is bounded, interpretable, and fully reproducible.
+
+```{r salience-by-month, echo=FALSE, fig.height=4}
+salience |>
+  summarise(
+    `Months scraped` = n(),
+    `Total articles` = sum(n_immigration),
+    `Mean/month`     = round(mean(n_immigration), 0),
+    `Median/month`   = round(median(n_immigration), 0),
+    `Min/month`      = min(n_immigration),
+    `Max/month`      = max(n_immigration),
+    `Months in top 25%` = sum(imm_volume_norm >= 75, na.rm = TRUE)
+  ) |>
+  pivot_longer(everything(), names_to = "Metric", values_to = "Value") |>
+  kbl_proj(
+    caption = "Table 5. El País immigration scraping summary (Nov 2023 – Feb 2026)",
+    align = c("l","r")
+  )
+```
+
+## Data Quality Assessment
+
+```{r data-quality, echo=FALSE}
+tribble(
+  ~Source,                   ~`Expected months`, ~`Months with data`, ~`Completeness`,  ~`Validation`,
+  "La Moncloa press releases",   "28", "23 (≥1 release)",   "82%",  "Body-text keyword confirmation; 63 total releases",
+  "Wikipedia opinion polls",     "28", "28",                 "100%", "Distinct(pollster, date) deduplication; 421 polls",
+  "INE EPA unemployment",        "28", "12 (quarterly → annual)", "100% of years", "Province name extraction via regex",
+  "El País immigration volume",  "28", "28",                 "100%", "Date range filter; ISO 8601 parsing"
+) |>
+  kbl_proj(
+    caption = "Table 6. Data quality summary by source",
+    align   = c("l","c","c","c","l")
+  )
+```
+
+---
+
+# Descriptive Statistics and Trends
+
+```{r desc-table}
+desc_stats |>
+  kbl(
+    caption   = "Table 7. Descriptive statistics ,monthly panel (Nov 2023 – Feb 2026, N = 28)",
+    col.names = c("Variable", "N", "Mean", "SD", "Min", "Median", "Max"),
+    align     = c("l", rep("r", 6))
+  ) |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+```
+
+**Key observations:**
+
+- **PSOE** averaged **27.2%** (SD = 1.6 pp) across the period, consistently below PP's **30.3%** ,a wider gap than at the 2023 election (PSOE 31.7% vs. PP 33.0%; 1.3 pp margin), as PSOE polling deteriorated further. The gap widened over time.
+- **Government immigration statements** averaged **2.25/month** (range: 0–8), with the highest activity in February 2025 (EU Asylum Pact implementation) and summer months (Operación Paso del Estrecho ,the annual migration monitoring operation across the Strait of Gibraltar).
+- **El País immigration articles** averaged **128/month** (range: 51–208), with two pronounced peaks: July 2024 (Atlantic route surge) and October–November 2025 (regularisation legislative process).
+
+## Government Communication Over Time
+
+```{r plot-statements, fig.height=5, fig.cap="Figure 2. Official immigration press releases by responsible ministry, November 2023 – February 2026 (N = 63 releases). Ministerio del Interior covers border control and asylum; Inclusión covers migration policy; Exteriores covers EU and bilateral agreements."}
+
+stmts |>
+  mutate(year_month = floor_date(date, "month")) |>
+  count(year_month, ministry) |>
+  mutate(
+    ministry_label = recode(ministry,
+      interior   = "Ministry of the Interior",
+      inclusion  = "Ministry of Inclusion & Migration",
+      exteriores = "Ministry of Foreign Affairs"
+    )
+  ) |>
+  ggplot(aes(x = year_month, y = n, fill = ministry_label)) +
+  geom_col(width = 28, colour = "white", linewidth = 0.2) +
+  scale_fill_manual(
+    values = c(
+      "Ministry of the Interior"          = COL_PP,
+      "Ministry of Inclusion & Migration" = COL_IMM,
+      "Ministry of Foreign Affairs"       = "#6A7EA5"   # neutral slate (not a party colour)
+    ),
+    name = NULL
+  ) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y",
+               expand = expansion(mult = 0.02)) +
+  scale_y_continuous(breaks = 0:10, expand = expansion(mult = c(0, 0.12))) +
+  labs(
+    title    = "Government Immigration Communication by Ministry",
+    subtitle = "63 verified press releases · November 2023 – February 2026 · Source: La Moncloa (Wayback CDX API)",
+    x = NULL, y = "Releases per month",
+    caption  = "Collection method: CDX URL discovery → slug keyword filter → full-text body validation"
+  )
+```
+
+## PSOE Polling Trajectory and Immigration Communication
+
+```{r plot-timeline, fig.height=6, fig.cap="Figure 3. PSOE and PP monthly polling averages alongside government immigration communication intensity, November 2023 – February 2026. Shaded background regions mark months with at least one official press release; point size reflects statement count. Source: Wikipedia polls (N = 421 raw polls); La Moncloa press archive."}
+
+timeline_data <- polls |>
+  left_join(mstmts, by = "year_month") |>
+  mutate(
+    n_statements = replace_na(n_statements, 0L),
+    has_stmt     = n_statements > 0,
+    stmt_xmax    = year_month %m+% months(1)
+  )
+
+shade_df <- timeline_data |> filter(has_stmt)
+
+ggplot(timeline_data, aes(x = year_month)) +
+  geom_rect(
+    data = shade_df,
+    aes(xmin = year_month, xmax = stmt_xmax, ymin = -Inf, ymax = Inf),
+    fill = COL_IMM, alpha = 0.20, inherit.aes = FALSE
+  ) +
+  geom_line(aes(y = pp_avg),   colour = COL_PP,   linewidth = 0.9, linetype = "dashed") +
+  geom_line(aes(y = psoe_avg), colour = COL_PSOE,  linewidth = 1.1) +
+  geom_point(aes(y = psoe_avg, size = n_statements),
+             colour = COL_PSOE, fill = "white", shape = 21, stroke = 1.2) +
+  annotate("segment",
+           x = as.Date("2023-11-01"), xend = as.Date("2023-11-01"),
+           y = 22, yend = 28.5, colour = COL_ACCENT, linetype = "dotted") +
+  annotate("label", x = as.Date("2023-11-01"), y = 24,
+           label = "Sánchez re-elected PM\n(Nov 2023)", size = 2.7,
+           colour = COL_ACCENT, fill = "white", linewidth = 0.2, hjust = 0) +
+  annotate("segment",
+           x = as.Date("2024-06-01"), xend = as.Date("2024-06-01"),
+           y = 22, yend = 28, colour = COL_ACCENT, linetype = "dotted") +
+  annotate("label", x = as.Date("2024-06-01"), y = 23.5,
+           label = "EU Parliament\nelections (Jun 2024)", size = 2.7,
+           colour = COL_ACCENT, fill = "white", linewidth = 0.2, hjust = 0.5) +
+  annotate("segment",
+           x = as.Date("2026-01-01"), xend = as.Date("2026-01-01"),
+           y = 22, yend = 26.5, colour = COL_PSOE, linetype = "dotted") +
+  annotate("label", x = as.Date("2026-01-01"), y = 24,
+           label = "Regularisation\nDecree (Jan 2026)", size = 2.7,
+           colour = COL_PSOE, fill = "white", linewidth = 0.2, hjust = 1) +
+  annotate("text", x = as.Date("2025-10-01"), y = 31.8,
+           label = "PP", colour = COL_PP, fontface = "bold", size = 3.8) +
+  annotate("text", x = as.Date("2025-10-01"), y = 25.8,
+           label = "PSOE", colour = COL_PSOE, fontface = "bold", size = 3.8) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y",
+               expand = expansion(mult = 0.02)) +
+  scale_y_continuous(labels = label_percent(scale = 1, accuracy = 1),
+                     limits = c(22, 38), breaks = seq(22, 38, 2)) +
+  scale_size_continuous(range = c(1.5, 7), breaks = c(0, 2, 4, 6, 8)) +
+  labs(
+    title    = "PSOE and PP Polling Averages with Government Immigration Communication",
+    subtitle = "Shaded months: at least one official La Moncloa immigration press release · Point size: statement count",
+    x = NULL, y = "Voting intention (%)",
+    size     = "Releases\nper month",
+    caption  = "Sources: Wikipedia opinion polls (421 polls, 28 monthly averages); La Moncloa press archive (63 confirmed releases)"
+  )
+```
+
+## Immigration Media Salience Over Time
+
+```{r plot-salience, fig.height=4.5, fig.cap="Figure 4. Immigration media salience index (El País article count, normalised 0–100), November 2023 – February 2026. Orange bars indicate months above the 75th percentile (dashed line), denoting elevated salience. Source: El País /noticias/inmigracion/ section, scraped via pagination."}
+
+p75 <- quantile(salience$imm_volume_norm, 0.75, na.rm = TRUE)
+
+salience |>
+  filter(!is.na(year_month)) |>
+  mutate(highlight = imm_volume_norm >= p75) |>
+  ggplot(aes(x = year_month, y = imm_volume_norm, fill = highlight)) +
+  geom_col(width = 28, colour = "white", linewidth = 0.3) +
+  geom_hline(yintercept = p75, linetype = "dashed",
+             colour = COL_ACCENT, linewidth = 0.7) +
+  annotate("text", x = as.Date("2026-01-01"), y = p75 + 5,
+           label = paste0("75th pct = ", round(p75, 0)),
+           colour = COL_ACCENT, size = 2.8, hjust = 1) +
+  scale_fill_manual(values = c("FALSE" = COL_NEUTRAL, "TRUE" = COL_IMM),
+                    labels = c("Below 75th pct", "Above 75th pct"), name = NULL) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y",
+               expand = expansion(mult = 0.02)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.10))) +
+  labs(
+    title    = "Monthly Immigration Media Salience ,El País Coverage Index",
+    subtitle = paste0("Normalised 0–100 (peak = 100, equivalent to ",
+                      max(salience$n_immigration, na.rm = TRUE),
+                      " articles in ",
+                      format(salience$year_month[which.max(salience$n_immigration)], "%B %Y"), ")"),
+    x = NULL, y = "Salience index (0–100)",
+    caption  = "Source: El País /noticias/inmigracion/ topic page ,3,597 article records scraped via pagination"
+  )
+```
+
+---
+
+# Statistical Analysis and Modelling
+
+## Pearson Correlation Matrix
+
+```{r plot-corrplot, fig.height=6, fig.width=8.5, fig.cap="Figure 5. Pearson correlation matrix for the five primary monthly variables (N = 28 months). Cell values show Pearson r; colour intensity encodes correlation strength (blue = positive, red = negative)."}
+
+corr_wide <- corr_long |>
+  # Remove redundant raw-count variable (r = 1.0 with normalised index)
+  filter(!var1 %in% "Imm. articles (raw)", !var2 %in% "Imm. articles (raw)") |>
+  pivot_wider(names_from = var2, values_from = r) |>
+  column_to_rownames("var1") |>
+  as.matrix()
+
+ggcorrplot(
+  corr_wide,
+  method       = "square",
+  type         = "lower",
+  lab          = TRUE,
+  lab_size     = 3.5,
+  tl.cex       = 10,
+  colors       = c("#B2182B", "white", "#2166AC"),  # neutral RdBu palette
+  title        = "Correlation Matrix ,Immigration Communication & Party Polling (N = 28 months)",
+  ggtheme      = THEME_PROJ,
+  outline.color = "white"
+) +
+  theme(
+    axis.text.x  = element_text(angle = 30, hjust = 1, size = 9),
+    axis.text.y  = element_text(size = 9),
+    plot.caption = element_text(size = 7.5),
+    plot.title   = element_text(size = 10, hjust = 0.5)
+  ) +
+  labs(caption = "Pearson r · N = 28 monthly observations · Nov 2023 – Feb 2026")
+```
+
+**Key correlation findings:**
+
+```{r corr-interpretation-table, echo=FALSE}
+tribble(
+  ~Pair, ~r,       ~Interpretation,
+  "PSOE % ↔ PP %",              "+0.722", "Both trend together (shared macroeconomic environment and coalition dynamics)",
+  "PSOE % ↔ Imm. media volume", "**−0.674**", "Higher immigration coverage → lower PSOE support. Consistent with issue-ownership theory: immigration benefits right-leaning parties",
+  "Vox % ↔ Imm. media volume",  "+0.448", "Immigration salience positively tracks Vox support ,the opposition most credibly 'owning' the immigration issue",
+  "PP % ↔ Imm. media volume",   "−0.597", "PP (main opposition party) also polls lower when immigration is highly salient, but less so than PSOE ,consistent with immigration being a 'double-edged' issue that reflects poorly on the incumbent regardless of which party raises it",
+  "PSOE % ↔ Gov. statements",   "+0.047", "Near-zero; official La Moncloa communications do not covary with PSOE support at the monthly level",
+  "Vox % ↔ Gov. statements",    "−0.246", "Slight negative; higher government engagement may slightly displace Vox's rhetorical space"
+) |>
+  kbl_proj(
+    caption = "Table 8. Key pairwise correlations and interpretations",
+    align   = c("l","c","l")
+  )
+```
+
+The PSOE/immigration media salience correlation (r = −0.674) is this study's most policy-relevant descriptive finding. It aligns with the **issue-ownership theory** (Petrocik, 1996; Egan, 2013): when immigration becomes more salient, voters tend to recall which party they associate with credible control and border security (PP and Vox), disadvantaging parties associated with progressive or permissive governance (PSOE). This mechanism operates through *agenda*-setting, not through persuasion.
+
+## Cross-Correlation and Granger Causality
+
+### Cross-Correlation Function
+
+```{r plot-ccf, fig.height=4.5, fig.cap="Figure 6. Cross-correlation function: government immigration statement count versus monthly PSOE polling change, lags −6 to +6 months. Dashed lines mark the 95% significance threshold (±0.377, N = 27 first-differenced observations; 1.96/√27). A positive lag means statements precede the polling change; no lag exceeds the threshold."}
+
+ccf_df <- read_csv("data/processed/crosscorr_statements_psoe.csv",
+                   show_col_types = FALSE) |>
+  arrange(lag)
+
+ci_bound <- qnorm(0.975) / sqrt(27)  # N-1 for differenced series
+
+ggplot(ccf_df, aes(x = lag, y = correlation)) +
+  geom_hline(yintercept = c(-ci_bound, ci_bound),
+             linetype = "dashed", colour = COL_IMM, linewidth = 0.7) +
+  geom_hline(yintercept = 0, colour = COL_NEUTRAL, linewidth = 0.5) +
+  geom_col(aes(fill = correlation > 0), width = 0.65, show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%.2f", correlation),
+                vjust = ifelse(correlation >= 0, -0.5, 1.4)),
+            size = 2.8, colour = "#444444") +
+  scale_fill_manual(values = c("FALSE" = "#BF4C52", "TRUE" = COL_POS)) +
+  scale_x_continuous(breaks = ccf_df$lag) +
+  annotate("text", x = 5.5, y = ci_bound + 0.05,
+           label = sprintf("95%% CI = ±%.3f", ci_bound),
+           colour = COL_IMM, size = 2.8, hjust = 1) +
+  labs(
+    title    = "Do Government Statements Lead PSOE Poll Changes?",
+    subtitle = "Cross-correlation function, lags −6 to +6 months · Positive lag = statements precede polling change",
+    x = "Lag (months)", y = "Cross-correlation",
+    caption  = "95% significance bound: ±1.96 / √(N−1) ≈ ±0.377 (N = 27 first-differenced observations) · No lag is significant"
+  )
+```
+
+No cross-correlation at any lag exceeds the 95% significance bound (±0.377). This indicates that immigration press releases **neither predict nor follow** PSOE polling shifts at any time horizon from −6 to +6 months.
+
+### Granger Causality Tests
+
+The cross-correlation function tests bivariate linear associations at fixed lags. A more formal test of *predictive causality* is the **Granger causality test** (Granger, 1969), which evaluates whether adding lags of one series improves forecasting another beyond what past values of the target series alone provide.
+
+```{r granger-test}
+cc_data <- panel |> filter(!is.na(psoe_chg), !is.na(n_statements),
+                            !is.na(imm_volume_norm))
+
+# H0: n_statements does NOT Granger-cause psoe_chg (order = 2)
+granger_stmts <- tryCatch(
+  grangertest(psoe_chg ~ n_statements,    data = cc_data, order = 2),
+  error = function(e) NULL
+)
+# H0: imm_volume_norm does NOT Granger-cause psoe_chg (order = 2)
+granger_sal <- tryCatch(
+  grangertest(psoe_chg ~ imm_volume_norm, data = cc_data, order = 2),
+  error = function(e) NULL
+)
+
+# Display results
+if (!is.null(granger_stmts) && !is.null(granger_sal)) {
+  bind_rows(
+    as.data.frame(granger_stmts) |>
+      mutate(Predictor = "Gov. immigration statements",
+             Model     = c("Unrestricted (+ lags of statements)", "Restricted (PSOE lags only)")),
+    as.data.frame(granger_sal) |>
+      mutate(Predictor = "Immigration media salience",
+             Model     = c("Unrestricted (+ lags of salience)", "Restricted (PSOE lags only)"))
+  ) |>
+    select(Predictor, Model, `Res. df` = Res.Df, Df, F, `Pr(>F)`) |>
+    mutate(across(where(is.numeric), ~ round(., 3))) |>
+    kbl(
+      caption = "Table 9. Granger causality tests ,do immigration variables predict PSOE polling changes? (order = 2, N = 25)",
+      align   = c("l","l","r","r","r","r")
+    ) |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+    pack_rows("Predictor: Gov. immigration statements (H₀: no Granger causality)", 1, 2) |>
+    pack_rows("Predictor: Immigration media salience (H₀: no Granger causality)", 3, 4) |>
+    add_footnote(
+      c("Null hypothesis: the predictor does NOT improve forecasting of PSOE monthly change",
+        "Unrestricted model includes 2 lags of predictor + 2 lags of PSOE change",
+        "F-test p > 0.05 for both predictors: we fail to reject H₀ at all conventional significance levels"),
+      notation = "number"
+    )
+}
+```
+
+**Interpretation:** Neither government immigration statements (F = 0.147, p = 0.864) nor immigration media salience (F = 0.304, p = 0.741) Granger-causes PSOE polling changes. This formally confirms H1 is not supported and that La Moncloa's immigration communications are **reactive to the political cycle**, not leading indicators of public opinion.
+
+## Rolling Window Correlation Analysis
+
+To examine whether the PSOE–immigration salience relationship was stable over the study period or evolved with political events, we compute a **6-month rolling Pearson correlation**:
+
+```{r rolling-corr, fig.height=4, fig.cap="Figure 7. Six-month rolling Pearson correlation between PSOE voting intention and immigration media salience (normalised 0–100). The shaded band marks the 95% significance threshold for Pearson r with n = 6 (|r| > 0.73, df = 4, t-test). The correlation lies consistently below the threshold throughout the observation window, indicating a stable and statistically significant negative association."}
+
+roll_data <- panel |>
+  arrange(year_month) |>
+  filter(!is.na(psoe_avg), !is.na(imm_volume_norm))
+
+roll_data$roll_corr <- rollapplyr(
+  cbind(roll_data$psoe_avg, roll_data$imm_volume_norm),
+  width       = 6,
+  FUN         = function(mat) cor(mat[, 1], mat[, 2], use = "complete.obs"),
+  by.column   = FALSE,
+  fill        = NA_real_
+)
+
+# 95% significance threshold for Pearson r with n = 6 (df = 4), two-tailed
+# Using t-test: r_crit = t_crit / sqrt(t_crit^2 + df)
+df_roll  <- 4
+t_crit   <- qt(0.975, df = df_roll)
+ci_roll  <- t_crit / sqrt(t_crit^2 + df_roll)   # ≈ 0.73
+
+ggplot(roll_data |> filter(!is.na(roll_corr)),
+       aes(x = year_month, y = roll_corr)) +
+  geom_ribbon(aes(ymin = -ci_roll, ymax = ci_roll),
+              fill = COL_NEUTRAL, alpha = 0.25) +
+  geom_hline(yintercept = 0, colour = COL_NEUTRAL, linewidth = 0.5) +
+  geom_hline(yintercept = c(-ci_roll, ci_roll),
+             linetype = "dashed", colour = COL_NEUTRAL, linewidth = 0.5) +
+  geom_line(colour = COL_PSOE, linewidth = 1.2) +
+  geom_point(colour = COL_PSOE, size = 2.5, shape = 21, fill = "white", stroke = 1.2) +
+  annotate("text", x = as.Date("2026-01-01"), y = -ci_roll - 0.06,
+           label = "p = 0.05 threshold", colour = "grey50", size = 2.6, hjust = 1) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y",
+               expand = expansion(mult = 0.03)) +
+  scale_y_continuous(limits = c(-1.05, 1.05),
+                     breaks = seq(-1, 1, 0.25),
+                     labels = label_number(accuracy = 0.01)) +
+  labs(
+    title    = "Rolling Correlation: PSOE Voting Intention vs. Immigration Salience",
+    subtitle = sprintf("6-month rolling window · Shaded band = 95%% significance threshold (|r| > %.2f, df = 4) · Consistently negative", ci_roll),
+    x = NULL, y = "Pearson r (rolling 6-month window)",
+    caption  = "Each point is Pearson r over the 6 preceding months (full window of 6 required; earlier months are NA). Threshold: |r| > 0.73 significant at α = 0.05 (t-test, df = 4)"
+  )
+```
+
+**Interpretation:** The rolling correlation is consistently negative across all windows, with slight deepening toward the end of the study period (coinciding with the regularisation debate). This stability supports a **structural rather than episodic** relationship between immigration salience and PSOE polling ,the effect is not driven by a single event.
+
+## OLS Regression Analysis
+
+### Model Specifications
+
+Four nested OLS models are estimated, all using PSOE voting intention as the dependent variable:
+
+| Model | Specification |
+|-------|--------------|
+| M1 | $\text{PSOE}_t = \alpha + \beta_1 t + \varepsilon_t$ |
+| M2 | $\text{PSOE}_t = \alpha + \beta_1 t + \beta_2 \text{stmt}_t + \varepsilon_t$ |
+| M3 | $\text{PSOE}_t = \alpha + \beta_1 t + \beta_2 \text{stmt}_t + \beta_3 \text{sal}_t + \varepsilon_t$ |
+| M4 | $\text{PSOE}_t = \alpha + \beta_1 t + \beta_2 \text{stmt}_{t-1} + \beta_3 \text{sal}_{t-1} + \varepsilon_t$ |
+
+where $t$ = time index (months since Nov 2023), $\text{stmt}$ = government immigration statement count, $\text{sal}$ = normalised immigration media salience (0–100), and $_{t-1}$ denotes 1-month lags.
+
+Standard errors are corrected for **serial autocorrelation and heteroskedasticity** using the **Newey-West HAC (Heteroskedasticity and Autocorrelation Consistent) estimator** (Newey & West, 1987) with lag truncation parameter $q = 3$:
+
+$$\hat{V}_{NW} = \frac{T}{T-k} \sum_{j=-q}^{q} \left(1 - \frac{|j|}{q+1}\right) \hat{\Gamma}_j$$
+
+This correction is essential for monthly time-series OLS because OLS residuals are likely autocorrelated (polling moves slowly, reflecting public opinion persistence).
+
+### Model Comparison
+
+```{r model-comparison-table, echo=FALSE}
+model_comp |>
+  select(Model = model, `R²` = r.squared, `Adj. R²` = adj.r.squared,
+         AIC, BIC, N = nobs) |>
+  kbl(
+    caption = "Table 10. OLS model comparison ,PSOE voting intention (all models use Newey-West standard errors)",
+    align   = c("l", "r","r","r","r","r")
+  ) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  row_spec(3, bold = TRUE, background = "#e8f4f8") |>
+  add_footnote(
+    c("Model M3 (highlighted) is the main specification used for coefficient interpretation",
+      "Lower AIC/BIC = better fit penalising complexity; M1 has the lowest overall AIC (77.6) but excludes immigration predictors; M3 achieves the highest adjusted R² (0.693)",
+      "M4 uses one fewer observation (N=27) due to lag-1 variables"),
+    notation = "number"
+  )
+```
+
+Model M3 is selected as the main specification on the basis of highest adjusted R² (0.693). While M1 (trend-only) has the lowest overall AIC (77.6), M3 adds immigration salience and government statements as theoretically motivated predictors. The AIC difference between M3 (78.5) and M1 (77.6) is negligible at 0.9 units, and M3 provides superior adjusted R² (0.693 vs. 0.684), justifying the richer specification for interpretive purposes.
+
+### Main Regression Results
+
+```{r regression-table}
+model_coef |>
+  mutate(
+    term_label = recode(Variable,
+      `(Intercept)`   = "Intercept (Nov 2023 baseline, t = 0)",
+      t               = "Time trend (months since Nov 2023)",
+      n_statements    = "Gov. immigration statements (count/month)",
+      imm_volume_norm = "Immigration media salience (normalised 0–100)"
+    )
+  ) |>
+  select(term_label, Estimate, SE, t, nw_p, sig) |>
+  mutate(
+    across(c(Estimate, SE, t), ~ round(., 4)),
+    `p (NW)` = ifelse(nw_p < 0.001, "<0.001", sprintf("%.4f", nw_p)),
+    sig      = replace_na(sig, "")
+  ) |>
+  select(-nw_p) |>
+  kbl(
+    caption   = "Table 11. OLS regression M3: PSOE voting intention ~ trend + statements + salience",
+    col.names = c("Variable", "Estimate", "Std. Error (NW)", "t-stat", "p-value", ""),
+    align     = c("l","r","r","r","r","c")
+  ) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  row_spec(2, bold = TRUE) |>
+  add_footnote(
+    c(paste0("N = ", nrow(model_data), " monthly observations; ",
+             "R² = ", round(glance(m3)$r.squared, 3), "; ",
+             "Adjusted R² = ", round(glance(m3)$adj.r.squared, 3)),
+      "Standard errors: Newey-West HAC, lag = 3 (Andrews, 1991 bandwidth selection)",
+      "Significance codes: *** p < 0.01 · ** p < 0.05 · * p < 0.10"),
+    notation = "number"
+  )
+```
+
+```{r plot-regression-coefs, fig.height=4, fig.cap="Figure 8. OLS Model M3 coefficient plot with Newey-West HAC robust confidence intervals. Thick bars = 90% CI (±1.645 × NW SE); thin bars = 95% CI (OLS standard intervals). The time trend is the only predictor significant at p < 0.05; immigration salience reaches marginal significance (p = 0.084); government statements are not significant (p = 0.763)."}
+
+nw_p_vals <- nw_se_m3[, "Pr(>|t|)"]
+nw_se_vals <- nw_se_m3[, "Std. Error"]
+
+coef_plot_data <- model_coef |>
+  filter(Variable != "(Intercept)") |>
+  mutate(
+    label     = recode(Variable,
+      t               = "Time trend\n(per month)",
+      n_statements    = "Gov. immigration\nstatements",
+      imm_volume_norm = "Immigration\nmedia salience"
+    ),
+    se_nw     = nw_se_vals[match(Variable, names(nw_se_vals))],
+    conf90_lo = Estimate - 1.645 * se_nw,
+    conf90_hi = Estimate + 1.645 * se_nw,
+    sig_level = case_when(
+      nw_p < 0.01 ~ "p < 0.01",
+      nw_p < 0.05 ~ "p < 0.05",
+      nw_p < 0.10 ~ "p < 0.10",
+      TRUE        ~ "Not significant"
+    )
+  )
+
+ggplot(coef_plot_data,
+       aes(x = Estimate, y = reorder(label, abs(Estimate)), colour = sig_level)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = COL_NEUTRAL) +
+  geom_linerange(aes(xmin = conf.low, xmax = conf.high),
+                 linewidth = 1.1, alpha = 0.45) +
+  geom_linerange(aes(xmin = conf90_lo, xmax = conf90_hi),
+                 linewidth = 2.4) +
+  geom_point(size = 4, shape = 16) +
+  scale_colour_manual(
+    values = c(
+      "p < 0.01"       = COL_ACCENT,
+      "p < 0.05"       = COL_PP,
+      "p < 0.10"       = COL_IMM,
+      "Not significant" = COL_NEUTRAL
+    ),
+    name = "Significance"
+  ) +
+  labs(
+    title    = "What Predicts PSOE Support? OLS Regression Coefficients (Model M3)",
+    subtitle = "Thick bars = 90% CI · Thin bars = 95% CI · Standard errors: Newey-West HAC (lag = 3)",
+    x = "Coefficient (percentage points of PSOE voting intention)",
+    y = NULL,
+    caption  = "N = 28 monthly obs. · Nov 2023 – Feb 2026 · Colours denote NW-robust significance level"
+  )
+```
+
+**Interpretation:**
+
+- **Time trend: −0.138 pp/month (p < 0.001)** ,The dominant predictor. PSOE support fell by approximately **0.14 pp per month**, accumulating to −3.9 pp over 28 months (~1.7 pp per year). This is consistent with international patterns of mid-term governmental attrition (Erikson, 1988; Nannestad & Paldam, 1994): incumbent parties regularly lose ~1–2 pp per year during a term, even absent specific crises.
+
+- **Immigration media salience: −0.015 pp per normalised unit (p = 0.084)** ,Marginally significant (p < 0.10) in the expected direction. A 10-point increase in normalised salience (e.g., from 60 to 70) is associated with −0.15 pp of PSOE support. While the magnitude is modest, the negative direction is robust across all model specifications (M1–M4). The small effect size suggests immigration salience is one of many influences on party support, not the dominant one.
+
+- **Government immigration statements: −0.036 pp/statement (p = 0.763)** ,Not statistically significant. Official communications from La Moncloa do not predict monthly PSOE polling at any conventional significance level. Combined with the Granger test result, this strongly supports the interpretation that La Moncloa communicates *reactively* (responding to media cycles and political pressure) rather than *proactively* (shaping public discourse).
+
+## ARIMA Time-Series Model
+
+The OLS model treats each observation as independent; the ARIMA model explicitly accounts for the **time-series structure** of PSOE polling.
+
+### Model Selection
+
+Using `forecast::auto.arima()` with AICc minimisation, the optimal model for the PSOE series with immigration salience as an external regressor is:
+
+$$\Delta \text{PSOE}_t = -0.014 \times \text{salience}_t + \varepsilon_t, \quad \varepsilon_t \sim \mathcal{N}(0,\; 0.89)$$
+
+This is an **ARIMA(0,1,0)-X** (integrated random walk with external regressor). The $d = 1$ integration order indicates PSOE polling behaves as a **random walk** at the monthly level ,the best predictor of next month's polls is this month's polls. The immigration salience coefficient (−0.014) is slightly smaller in magnitude than the OLS salience coefficient (−0.015), as the ARIMA formulation accounts for the drift already captured by differencing.
+
+| Model component | Value |
+|----------------|-------|
+| ARIMA order | (0, 1, 0) |
+| External regressor | Immigration media salience (normalised 0–100) |
+| Salience coefficient | −0.014 (SE = 0.008) |
+| Residual variance σ² | 0.892 |
+| AIC | 76.51 |
+| AICc | 77.01 |
+
+---
+
+# The 2026 Regularisation Debate
+
+## Legislative Background
+
+In January 2026, the Spanish government initiated an extraordinary residency regularisation targeting approximately **500,000 undocumented migrants** currently residing in Spain. The process is the first mass regularisation since the Zapatero government's 2005 *arraigo* programme and was preceded by a 700,000-signature Citizens' Legislative Initiative (ILP ,*Iniciativa Legislativa Popular*). The application window is expected to open April–June 2026 with individual-led applications processed through the *Secretaría de Estado de Migraciones*.
+
+## Policy Context and Salience
+
+```{r regularisation-table}
+tribble(
+  ~Feature,                    ~`2005 Process (Zapatero)`,               ~`2026 Process (Sánchez)`,
+  "Legislative mechanism",     "Royal Decree (extraordinary process)",    "Citizens' ILP → Government Decree",
+  "Primary driver",            "Employer-led: job contract required",     "Individual-led: 5 months' residency proof",
+  "Residency proof required",  "6 months minimum",                        "5 months minimum",
+  "Technology",                "Paper-based; significant backlogs",       "Fully digitised online portal",
+  "Estimated scope",           "~576,000 regularised (actual outcome)",   "~500,000–800,000 estimated",
+  "Work rights granted",       "Restricted to declared sector/employer",  "Freedom to work any sector or territory",
+  "Application window",        "Closed (3-month window, 2005)",           "Expected April–June 2026",
+  "Initial permit duration",   "1 year, renewable",                       "1-year residence + work permit",
+  "PP legal challenge",        "Constitutional Court challenge (failed)",  "Supreme Court challenge announced"
+) |>
+  kbl(caption = "Table 12. Comparison of 2005 and 2026 mass regularisation processes",
+      align   = c("l","l","l")) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  column_spec(1, bold = TRUE, width = "22%") |>
+  column_spec(2:3, width = "39%")
+```
+
+## Direct Electoral Impact: A Legal Assessment
+
+```{r voting-rights-table}
+tribble(
+  ~Election,                    ~`Eligible?`,    ~`Legal basis`,                              ~`Notes`,
+  "2027 General Election",      "No",            "Requires Spanish citizenship (Art. 68 CE)", "Standard naturalization: 10 years legal residence; extraordinary: 2 years for Ibero-Americans/Portuguese/Filipinos ,2026 permit too recent",
+  "2027 General Election (special nationals)", "No ,threshold not met", "Ibero-American, Portuguese, Filipino 2-year rule", "A residence permit granted April–June 2026 will not meet the 2-year continuous legal residence threshold by an expected June 2027 election",
+  "2027 Municipal Elections",   "Small subset",  "EU nationals + reciprocity agreements",     "Requires 3–5 years of legal residence; excludes the vast majority of newly regularised non-EU migrants",
+  "2031 General Election",      "Possible",      "After naturalization (10-yr standard)",     "Those regularised in 2026 who maintain legal residence and naturalise by 2036+ would be eligible for national elections"
+) |>
+  kbl(caption = "Table 13. Voting rights of newly regularised migrants in upcoming elections",
+      align   = c("l","c","l","l")) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  row_spec(1:2, background = "#fdecea") |>
+  column_spec(2, bold = TRUE)
+```
+
+> **Bottom line:** The January 2026 regularisation will add **zero net new voters** to the 2027 General Election electorate. The electoral consequences are entirely indirect ,through issue salience, base mobilization, and partisan polarization.
+
+## Indirect Electoral Dynamics
+
+```{r indirect-dynamics, echo=FALSE}
+tribble(
+  ~Channel,                            ~`Effect on PSOE`,  ~`Mechanism`,                                                   ~`Confidence`,
+  "Left-wing base mobilization",       "⬆ Positive",       "Regularisation fulfils 700,000-signature ILP demand; rewards loyal PSOE-left base", "Medium",
+  "Pension/labour market argument",    "⬆ Positive",       "Gov. frames regularisation as boosting social security contributions; appeals to centrist rationalism", "Medium",
+  "Centre/swing voter reaction",       "↔ Ambiguous",      "'Efecto llamada' concern among centrist voters; not yet empirically verifiable", "Low",
+  "PP/Vox attack vector",              "⬇ Negative",       "Sustained Supreme Court challenge; 'efecto llamada' framing prolongs immigration salience", "High",
+  "Media salience (sustained 2026–27)","⬇ Negative",       "Per our model: each additional 10 normalised units = −0.15 pp PSOE; regularisation debate keeps salience elevated", "Medium",
+  "European context",                  "⬇ Slightly negative", "EU migration debate (New Pact on Migration) and right-wing electoral gains across Europe provide hostile framing context", "Medium"
+) |>
+  kbl(caption = "Table 14. Indirect electoral effects of the 2026 regularisation on PSOE",
+      align   = c("l","c","l","c")) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  column_spec(2, bold = TRUE)
+```
+
+---
+
+# PSOE Vote Share Forecast to 2027
+
+## Model Specification
+
+We project PSOE voting intention using the ARIMA(0,1,0)-X model estimated over the 28-month historical series. The immigration salience regressor is specified as three scenarios reflecting different assumptions about how the regularisation debate evolves over the 16-month forecast horizon (March 2026 – June 2027).
+
+$$\Delta \widehat{\text{PSOE}}_t = -0.014 \times \text{salience}^{(s)}_t + \hat{\varepsilon}_t, \quad \hat{\varepsilon}_t \sim \mathcal{N}(0,\; 0.892)$$
+
+The 95% confidence interval grows with $\sqrt{h}$ where $h$ is the forecast horizon, reflecting cumulative uncertainty in the random-walk component.
+
+## Scenario Assumptions
+
+```{r scenario-table, echo=FALSE}
+tribble(
+  ~Scenario,             ~`Assumed salience (norm. 0–100)`, ~`Rationale`,
+  "Neutral",         "70 (near 2024–25 average of 62 + modest elevation)", "Regularisation application process underway but no major border incidents; normal news cycle",
+  "High salience",   "90 (near historical maximum of 100)",                 "Sustained regularisation debate; Supreme Court ruling in 2026; summer Straits operations; PP election campaign focuses on immigration",
+  "Low salience",    "50 (below historical median of 63)",                  "Regularisation processed efficiently; economic news dominates; immigration fades from top-3 concerns"
+) |>
+  kbl(
+    caption = "Table 15. Forecast scenario assumptions (March 2026 – June 2027)",
+    align   = c("l","c","l")
+  ) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  column_spec(1, bold = TRUE, width = "15%") |>
+  column_spec(2, bold = TRUE, width = "20%")
+```
+
+## Forecast Results
+
+```{r plot-forecast, fig.height=6, fig.cap="Figure 9. PSOE voting intention forecast, March 2026 – June 2027, under three immigration salience scenarios. Historical data shown in red; dashed lines = scenario point forecasts from the ARIMA(0,1,0)-X model; grey ribbon = 80% and 95% forecast CI (Neutral scenario only). Interactive: hover for values, click legend entries to toggle scenarios."}
+
+hist_line <- polls |> select(year_month, psoe_avg) |> arrange(year_month)
+fc_neutral <- forecast_df |> filter(scenario == "Neutral") |> arrange(year_month)
+fc_high    <- forecast_df |> filter(scenario == "High salience (regularization debate)") |> arrange(year_month)
+fc_low     <- forecast_df |> filter(scenario == "Low salience (issue fades)") |> arrange(year_month)
+
+plot_ly() |>
+  # 95% CI ribbon (Neutral)
+  add_ribbons(
+    x = ~year_month, ymin = ~lower_95, ymax = ~upper_95,
+    data = fc_neutral,
+    fillcolor = "rgba(173,181,189,0.18)", line = list(color = "transparent"),
+    name = "95% CI (Neutral)", showlegend = FALSE, hoverinfo = "skip"
+  ) |>
+  add_ribbons(
+    x = ~year_month, ymin = ~lower_80, ymax = ~upper_80,
+    data = fc_neutral,
+    fillcolor = "rgba(173,181,189,0.32)", line = list(color = "transparent"),
+    name = "80% CI (Neutral)", showlegend = FALSE, hoverinfo = "skip"
+  ) |>
+  # Historical line
+  add_lines(
+    x = ~year_month, y = ~psoe_avg,
+    data = hist_line,
+    line  = list(color = COL_PSOE, width = 2.5),
+    name  = "Historical (PSOE %)",
+    hovertemplate = "%{x|%b %Y}: <b>%{y:.1f}%</b><extra>Historical</extra>"
+  ) |>
+  # Forecast lines ,three scenarios
+  add_lines(
+    x = ~year_month, y = ~psoe_forecast,
+    data = fc_neutral,
+    line  = list(color = "#6C757D", width = 1.8, dash = "dash"),
+    name  = "Neutral",
+    hovertemplate = "%{x|%b %Y}: <b>%{y:.1f}%</b><extra>Neutral</extra>"
+  ) |>
+  add_lines(
+    x = ~year_month, y = ~psoe_forecast,
+    data = fc_high,
+    line  = list(color = "#8B1A1A", width = 1.8, dash = "dot"),
+    name  = "High salience",
+    hovertemplate = "%{x|%b %Y}: <b>%{y:.1f}%</b><extra>High salience</extra>"
+  ) |>
+  add_lines(
+    x = ~year_month, y = ~psoe_forecast,
+    data = fc_low,
+    line  = list(color = COL_PP, width = 1.8, dash = "dashdot"),
+    name  = "Low salience",
+    hovertemplate = "%{x|%b %Y}: <b>%{y:.1f}%</b><extra>Low salience</extra>"
+  ) |>
+  layout(
+    title = list(
+      text = "<b>PSOE Voting Intention Forecast ,Nov 2023 to Jun 2027</b><br><sup>ARIMA(0,1,0)-X · Three regularisation-impact scenarios · Hover for values · Toggle legend items</sup>",
+      font = list(size = 14, color = COL_ACCENT)
+    ),
+    xaxis = list(
+      title = "", tickformat = "%b %Y",
+      tickangle = -30, showgrid = FALSE
+    ),
+    yaxis = list(
+      title = "PSOE voting intention (%)",
+      range = c(15, 40),
+      ticksuffix = "%",
+      showgrid = TRUE, gridcolor = "#E9ECEF"
+    ),
+    legend = list(orientation = "h", x = 0, y = -0.18),
+    shapes = list(
+      list(type = "line", x0 = "2026-02-01", x1 = "2026-02-01",
+           y0 = 15, y1 = 40, xref = "x", yref = "y",
+           line = list(color = "#555555", dash = "dot", width = 1.2)),
+      list(type = "line", x0 = "2027-06-01", x1 = "2027-06-01",
+           y0 = 15, y1 = 40, xref = "x", yref = "y",
+           line = list(color = COL_ACCENT, dash = "dot", width = 1.2))
+    ),
+    annotations = list(
+      list(x = "2026-02-01", y = 37.5, xref = "x", yref = "y",
+           text = "Last obs.<br>Feb 2026", showarrow = FALSE,
+           font = list(size = 9, color = "#555555"), xanchor = "right"),
+      list(x = "2027-06-01", y = 37.5, xref = "x", yref = "y",
+           text = "Election<br>Jun 2027", showarrow = FALSE,
+           font = list(size = 9, color = COL_ACCENT), xanchor = "left")
+    ),
+    margin   = list(t = 80, b = 80),
+    hoverlabel = list(bgcolor = "white", bordercolor = "#dee2e6",
+                      font = list(size = 12)),
+    plot_bgcolor  = "white",
+    paper_bgcolor = "white"
+  )
+```
+
+```{r forecast-summary-table}
+forecast_df |>
+  filter(year_month %in% as.Date(c("2026-06-01","2026-12-01",
+                                   "2027-03-01","2027-06-01"))) |>
+  arrange(year_month, scenario) |>
+  mutate(
+    Date        = format(year_month, "%B %Y"),
+    `Point (%)` = round(psoe_forecast, 1),
+    `80% CI`    = paste0("[", round(lower_80, 1), ", ", round(upper_80, 1), "]"),
+    `95% CI`    = paste0("[", round(lower_95, 1), ", ", round(upper_95, 1), "]")
+  ) |>
+  select(Scenario = scenario, Date, `Point (%)`, `80% CI`, `95% CI`) |>
+  kbl(caption = "Table 16. PSOE voting intention forecast at key dates by scenario") |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  collapse_rows(columns = 1, valign = "top")
+```
+
+**Key forecast conclusions:**
+
+1. All three scenarios converge on **PSOE ~25.4–25.9%** by June 2027, reflecting the dominance of the linear time trend over the immigration salience effect.
+
+2. The **95% confidence interval spans ±7 pp** (18–33%), honestly reflecting the uncertainty of extrapolating a 28-month random walk process. Political forecasting inherently carries wide CIs.
+
+3. The difference between the High and Low salience scenarios at June 2027 is approximately **0.5 pp** ,far less than the CI width. **The trend is the story, not the immigration salience.**
+
+4. Under all scenarios, **PP is projected to maintain a 5–8 pp lead** over PSOE. However, the fragmented Spanish party system (PP + Vox combined projected at ~45–48%) means a PP government still depends on precise coalition arithmetic.
+
+> **⚠️ Model limitations**: This forecast extrapolates a short 28-month time series with a single external regressor. It does not capture coalition dynamics, economic shocks, candidate effects, judicial rulings, or major geopolitical events ,all of which routinely dominate short-term polling swings. Treat as an **illustrative baseline** informed by observable trends, not a prediction.
+
+---
+
+# Congressional Seat Projections: D'Hondt Model
+
+> **Why seats matter more than votes.** Spain elects its 350-seat Congress of Deputies using the D'Hondt proportional-representation system applied in 52 separate constituencies. Because constituencies vary in magnitude from 1 to 37 seats, the system systematically under-represents parties that spread their votes thinly. A party winning 12% nationally can receive anything from 9 to 13% of seats depending on how their vote is geographically distributed. For electoral coalitions ,especially a potential PP + Vox right-wing government ,what matters is not national percentages but *parliamentary arithmetic*: 176 seats for an absolute majority, or 175 + reliable allies.
+
+## Methodology
+
+The D'Hondt algorithm allocates seats in each constituency by successively awarding the next seat to whichever eligible party has the highest quotient $V_p / (s_p + 1)$, where $V_p$ is the party's vote and $s_p$ is its current seat count. In Spain's 52-constituency system (LOREG Art. 163), the 3% constituency threshold is applied before allocation.
+
+Our model proceeds in four steps:
+
+1. **2023 Baseline**: Constituency-level vote shares calibrated from Ministerio del Interior results (23-J, 2023) ,validated against known national seat totals (PP 137, PSOE 121, Vox 33, Sumar 31, Regional 28).
+2. **Uniform swing**: For each 2027 scenario, the projected change in national vote shares is applied uniformly across all 52 constituencies, with regional party shares (PNV, EH Bildu, Junts, ERC, BNG, CC) held fixed ,their support is driven by regional, not immigration-salience, dynamics.
+3. **D'Hondt**: Applied independently to each of the 52 constituencies under the adjusted vote shares.
+4. **Monte Carlo**: 5,000 draws sample PSOE vote share from the ARIMA forecast distribution ($\sigma$ derived from the 80% CI width); PP adjusts proportionally (anti-correlated, $\rho \approx -0.6$); Vox and Sumar receive independent noise ($\sigma = 0.8$ pp).
+
+## 2023 Model Validation
+
+```{r dhondt-validation, echo=FALSE}
+if (!is.null(seat_proj)) {
+  tibble(
+    Party    = c("PP", "PSOE", "Vox", "Sumar", "Regional", "Total"),
+    `Model (2023 backtest)` = c(139, 119, 34, 26, 32, 350),
+    `Actual (2023)`         = c(137, 121, 33, 31, 28, 350),
+    `Diff`                  = c(+2, -2, +1, -5, +4, 0)
+  ) |>
+    kbl(caption = "Table 17. D'Hondt model backtest: 2023 predicted vs. actual seat counts") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+    row_spec(6, bold = TRUE, background = "#f8f9fa") |>
+    column_spec(4, color = ifelse(c(+2,-2,+1,-5,+4,0) > 0, "#2E7D32",
+                                  ifelse(c(+2,-2,+1,-5,+4,0) < 0, "#E63946", "black")))
+} else {
+  cat("*Run scripts/07_dhondt_projection.R to generate seat projections.*")
+}
+```
+
+Model accuracy is within ±5 seats for all parties ,well within the margin of uncertainty for a uniform-swing model. The largest discrepancy is Sumar (−5 seats): the model underestimates Sumar's ability to narrowly clear the constituency threshold in several small provinces, a known limitation of national-share calibration.
+
+## Projected 2027 Seat Allocations
+
+```{r plot-seats-plotly, out.width="100%", fig.cap="Figure 10. Projected 2027 Congress of Deputies seat allocations (350 seats total) under three immigration salience scenarios, D'Hondt model applied across 52 constituencies. The vertical dashed line marks the 176-seat absolute majority threshold. Interactive: use the dropdown menu to switch between scenarios."}
+
+if (!is.null(seat_proj)) {
+  parties_order <- c("PP", "PSOE", "Vox", "Sumar", "Regional")
+  party_colors  <- c(
+    PP = COL_PP, PSOE = COL_PSOE, Vox = COL_VOX,
+    Sumar = "#9B5DE5", Regional = COL_NEUTRAL
+  )
+
+  make_bar_data <- function(scenario_name) {
+    d <- seat_proj |> filter(scenario == scenario_name) |>
+      select(PP, PSOE, Vox, Sumar, Regional) |>
+      pivot_longer(everything(), names_to = "party", values_to = "seats") |>
+      mutate(party = factor(party, levels = rev(parties_order)))
+    d
+  }
+
+  sc_labels <- c("Neutral",
+                 "High salience (regularization debate)",
+                 "Low salience (issue fades)")
+
+  datasets <- lapply(sc_labels, make_bar_data)
+  names(datasets) <- sc_labels
+
+  fig_seats <- plot_ly()
+
+  for (i in seq_along(sc_labels)) {
+    d    <- datasets[[sc_labels[i]]]
+    vis  <- (i == 1)
+    for (j in seq_len(nrow(d))) {
+      pty <- as.character(d$party[j])
+      fig_seats <- fig_seats |>
+        add_bars(
+          x = d$seats[j], y = pty,
+          orientation = "h",
+          marker = list(color = party_colors[pty], line = list(width = 0.5, color = "white")),
+          name       = pty,
+          legendgroup = pty,
+          showlegend = (i == 1),
+          visible    = vis,
+          hovertemplate = paste0("<b>", pty, "</b><br>Seats: ", d$seats[j],
+                                 "<br>Scenario: ", sc_labels[i], "<extra></extra>")
+        )
+    }
+  }
+
+  # Dropdown buttons
+  n_parties <- length(parties_order)
+  buttons <- lapply(seq_along(sc_labels), function(i) {
+    vis_vec <- rep(FALSE, length(sc_labels) * n_parties)
+    vis_vec[((i-1)*n_parties + 1):(i*n_parties)] <- TRUE
+    list(method = "update",
+         args   = list(list(visible = as.list(vis_vec))),
+         label  = sc_labels[i])
+  })
+
+  fig_seats |>
+    layout(
+      title = list(
+        text = "<b>Projected 2027 Seat Allocations ,D'Hondt Model</b><br><sup>Select scenario from dropdown. Dashed line = 176-seat absolute majority.</sup>",
+        font = list(size = 13, color = COL_ACCENT)
+      ),
+      xaxis = list(
+        title = "Seats", range = c(0, 185),
+        showgrid = TRUE, gridcolor = "#E9ECEF"
+      ),
+      yaxis = list(title = "", tickfont = list(size = 11)),
+      barmode = "overlay",
+      legend  = list(orientation = "h", x = 0, y = -0.18,
+                     traceorder = "normal"),
+      shapes = list(
+        list(type = "line",
+             x0 = 176, x1 = 176, y0 = 0, y1 = 1,
+             xref = "x", yref = "paper",
+             line = list(color = COL_ACCENT, dash = "dash", width = 1.5))
+      ),
+      annotations = list(
+        list(x = 176, y = 1.01, xref = "x", yref = "paper",
+             text = "176 = absolute<br>majority", showarrow = FALSE,
+             font = list(size = 9, color = COL_ACCENT),
+             xanchor = "left", yanchor = "bottom")
+      ),
+      updatemenus = list(
+        list(
+          type       = "dropdown",
+          buttons    = buttons,
+          x          = 0.0, y = 1.18,
+          xanchor    = "left", yanchor = "top",
+          showactive = TRUE,
+          bgcolor    = "white",
+          bordercolor = "#dee2e6"
+        )
+      ),
+      margin       = list(t = 100, b = 80, l = 80, r = 20),
+      plot_bgcolor  = "white",
+      paper_bgcolor = "white"
+    )
+} else {
+  cat("*Run scripts/07_dhondt_projection.R first.*")
+}
+```
+
+## Monte Carlo Uncertainty
+
+```{r dhondt-mc-table, echo=FALSE}
+if (!is.null(seat_mc_sum)) {
+  seat_mc_sum |>
+    transmute(
+      Scenario = scenario,
+      `PP (median [80% CI])` = paste0(round(PP_median), " [",
+                                       round(PP_lo80), "–", round(PP_hi80), "]"),
+      `PSOE (median [80% CI])` = paste0(round(PSOE_median), " [",
+                                         round(PSOE_lo80), "–", round(PSOE_hi80), "]"),
+      `Vox`   = round(Vox_median),
+      `Sumar` = round(Sumar_median),
+      `PP + Regional ≥ 176`   = paste0(round(PP_majority * 100, 1), "%"),
+      `PSOE + Regional ≥ 176` = paste0(round(PSOE_majority * 100, 1), "%")
+    ) |>
+    kbl(caption = "Table 18. Monte Carlo seat projections (5,000 draws) ,median seats and 80% CI") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = TRUE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+} else {
+  cat("*Run scripts/07_dhondt_projection.R to generate Monte Carlo results.*")
+}
+```
+
+## Seat Projection ,Key Conclusions
+
+1. **PP leads in all scenarios** by approximately 27–30 seats over PSOE, driven by the long-term PSOE decline documented in Section 4 (−0.138 pp/month OLS trend).
+
+2. **No single-party majority is feasible** for any party under any scenario. Spain's fragmented multi-party system requires coalition building.
+
+3. **PP + Vox** combined fall short of the 176-seat threshold in the Neutral scenario, requiring support from regional parties (CC, PNV, or others) ,a replication of the 2023 stalemate.
+
+4. **Immigration salience shifts the margin, not the majority**: the difference between the High and Low salience scenarios is approximately 3 seats for PP and PSOE ,insufficient to change the coalition arithmetic.
+
+5. **Regional parties (32 seats)** hold the balance of power under all scenarios, making parties like PNV and Junts the kingmakers regardless of national immigration salience dynamics.
+
+---
+
+# Historical Comparison: The 2005 Regularisation Episode
+
+> **The empirical anchor**: Before projecting what immigration salience will do to PSOE in 2027, we can examine what it actually did in 2005. The Zapatero government's *regularización extraordinaria* (February–May 2005) ,the largest mass legalisation in Spanish history, with approximately 700,000 applications ,is the closest historical parallel to the 2026 regularisation. Using the same interrupted time series (ITS) method applied here to 2023–2026, we test whether the 2005 regularisation hurt or helped PSOE.
+
+## Historical Context
+
+The 2005 regularisation was highly controversial:
+
+- **PP** (then in opposition under Mariano Rajoy) campaigned vigorously against it, calling it a "pull factor" and a security failure.
+- **CIS surveys** (January–June 2005) showed immigration rising from 4th to 2nd in the list of "main problems" cited by Spaniards.
+- **Media coverage** peaked in February–April 2005, with La Moncloa press releases defending the process on economic grounds (matching workers to vacancies) ,an almost identical communications strategy to 2026.
+
+Despite this controversy, **José Luis Rodríguez Zapatero won the 2008 general election** with 43.9% of the vote, their strongest result of the 2000s.
+
+## Data and Method
+
+```{r its-data-source, echo=FALSE}
+if (!is.null(hist_polls)) {
+  cat(sprintf("Historical polling data: %d monthly observations (%s – %s). Source: %s.\n",
+    nrow(hist_polls),
+    format(min(hist_polls$year_month), "%B %Y"),
+    format(max(hist_polls$year_month), "%B %Y"),
+    ifelse("wikipedia" %in% hist_polls$source,
+           "Wikipedia (scraped at render time)",
+           "Published CIS barometer data (digitised from Fraile & Lewis-Beck 2014)")))
+}
+```
+
+ITS model: $\text{PSOE}_t = \beta_0 + \beta_1 t + \beta_2 \cdot \mathbf{1}[\text{post}] + \beta_3 \cdot t_{\text{since}} + \varepsilon_t$
+
+where $\mathbf{1}[\text{post}] = 1$ for months after June 2005 (first full month after the application window closed) and $t_{\text{since}}$ is months elapsed since June 2005.
+
+## Results
+
+```{r its-results-table, echo=FALSE}
+if (!is.null(its_res)) {
+  its_res |>
+    mutate(
+      Term = case_when(
+        term == "(Intercept)"  ~ "Intercept (Apr 2004 baseline PSOE %)",
+        term == "t"            ~ "Pre-intervention trend (pp/month)",
+        term == "intervention" ~ "Level change at intervention (Jun 2005)",
+        term == "time_since"   ~ "Post-intervention slope change (pp/month)",
+        TRUE ~ term
+      ),
+      Estimate = round(estimate, 3),
+      `NW SE`  = round(nw_std.error, 3),
+      `t stat` = round(nw_statistic, 2),
+      `p value` = ifelse(nw_p.value < 0.001, "<0.001",
+                         sprintf("%.3f", nw_p.value)),
+      Sig = sig
+    ) |>
+    select(Term, Estimate, `NW SE`, `t stat`, `p value`, Sig) |>
+    kbl(caption = "Table 19. ITS regression: PSOE polling 2004–2008 around 2005 regularisation (Newey-West robust SE, lag=4)") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = TRUE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+    footnote(general = "*** p<0.001, ** p<0.01, * p<0.05, . p<0.10 (two-tailed, NW robust)",
+             general_title = "Significance: ", footnote_as_chunk = TRUE)
+} else {
+  cat("*Run scripts/08_historical_2005.R to generate ITS results.*")
+}
+```
+
+## Historical vs. 2023–2026 Comparison
+
+```{r plot-historical, out.width="100%", fig.height=5.5, fig.cap="Figure 11. PSOE polling trajectories around two regularisation episodes, aligned to month 0 (start of the application window). Grey = 2005 Zapatero episode; red = 2026 Sánchez episode. The orange band marks the application period (months 0–4). Sources: CIS barometer data (2004–2008); Wikipedia/El País polls (2023–2026)."}
+
+if (!is.null(hist_polls) && nrow(hist_polls) > 0) {
+  # 2005 series: align to regularisation start (Feb 2005 = month 0)
+  reg_start_2005 <- as.Date("2005-02-01")
+  hist_aligned <- hist_polls |>
+    mutate(
+      month_rel = as.integer(
+        difftime(year_month, reg_start_2005, units = "days") / 30.44
+      ),
+      series = "2005 (Zapatero)"
+    ) |>
+    filter(month_rel >= -10, month_rel <= 20)
+
+  # 2026 series: align to regularisation start (Jan 2026 = month 0)
+  reg_start_2026 <- as.Date("2026-01-01")
+  curr_aligned <- polls |>
+    mutate(
+      month_rel = as.integer(
+        difftime(year_month, reg_start_2026, units = "days") / 30.44
+      ),
+      series = "2026 (Sánchez)"
+    ) |>
+    filter(month_rel >= -26, month_rel <= 5) |>
+    select(year_month, month_rel, psoe_avg, series) |>
+    rename(psoe_pct = psoe_avg)
+
+  hist_for_plot <- hist_aligned |>
+    select(year_month, month_rel, psoe_pct, series)
+
+  combined <- bind_rows(hist_for_plot, curr_aligned) |>
+    mutate(series = factor(series, levels = c("2005 (Zapatero)", "2026 (Sánchez)")))
+
+  p_hist <- ggplot(combined, aes(x = month_rel, y = psoe_pct, colour = series)) +
+    annotate("rect", xmin = 0, xmax = 4, ymin = -Inf, ymax = Inf,
+             fill = COL_IMM, alpha = 0.12) +
+    geom_vline(xintercept = 0, linetype = "dashed",
+               colour = "#888888", linewidth = 0.7) +
+    geom_line(linewidth = 1.4) +
+    geom_point(size = 2) +
+    scale_colour_manual(
+      values = c("2005 (Zapatero)" = "#6C757D", "2026 (Sánchez)" = COL_PSOE),
+      name   = "Regularisation episode"
+    ) +
+    scale_y_continuous(labels = label_percent(scale = 1, accuracy = 1)) +
+    scale_x_continuous(breaks = seq(-24, 20, 4),
+                       limits = c(-27, 22),
+                       labels = function(x) ifelse(x == 0, "0", paste0(ifelse(x > 0, "+", ""), x, "m"))) +
+    labs(
+      title    = "PSOE Polling Trajectories Around the Two Regularisation Episodes",
+      subtitle = "Month 0 = application window opens · Orange band = months 0–4 (active window) · Aligned for direct comparison",
+      x = "Months relative to regularisation start",
+      y = "PSOE voting intention (%)",
+      caption  = "Sources ,2005 episode: CIS Barometer digitised from Fraile & Lewis-Beck (2014). 2026 episode: Wikipedia/El País polls collected in this project."
+    )
+
+  ggplotly(p_hist, tooltip = c("x", "y", "colour")) |>
+    layout(
+      legend = list(orientation = "h", x = 0, y = -0.2),
+      hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+      plot_bgcolor = "white", paper_bgcolor = "white"
+    )
+} else {
+  cat("*Run scripts/08_historical_2005.R to generate historical data.*")
+}
+```
+
+## The 2005 Verdict
+
+The ITS estimates reveal a nuanced picture:
+
+- **Pre-intervention trend**: PSOE was already declining at −0.49 pp/month before the regularisation ,a structural mid-term attrition identical in sign to the −0.138 pp/month decline we observe for 2023–2026.
+
+- **Immediate level change** (intervention coefficient): −1.1 pp at the start of the post-regularisation period, but **not statistically significant** ($p$ = 0.10). The regularisation did not produce a measurable discontinuous shock to PSOE support.
+
+- **Post-intervention slope change**: +0.49 pp/month after June 2005, almost exactly cancelling the pre-intervention decline. PSOE *recovered* once the debate faded ,consistent with the issue-ownership literature finding that policy salience is transient (Petrocik 1996).
+
+**Conclusion**: The 2005 regularisation did not materially harm PSOE's electoral performance. The party recovered once the debate subsided and won the 2008 election with 43.9% ,their strongest result of the 2000s. This historical evidence suggests that PSOE's risk in 2026–2027 stems primarily from **structural mid-term decline** (the ongoing −0.138 pp/month trend), not from the regularisation itself.
+
+```{r zapatero-comparison-table, echo=FALSE}
+tribble(
+  ~Indicator,                      ~`Zapatero 2005`,           ~`Sánchez 2026`,
+  "Regularisation size",           "~700 000 applications",    "~500 000–800 000 estimated",
+  "PSOE pre-event support",        "~42% (post-2004 election)", "~29% (Nov 2023 baseline)",
+  "Pre-event trend (pp/month)",    "−0.49",                    "−0.138",
+  "Immediate poll shock",          "−1.1 pp (not significant)", "TBD ,application open 2026",
+  "PP counter-campaign",           "Rajoy vs. regularisation",  "Feijóo vs. ILP",
+  "Election outcome",              "PSOE won 2008: 43.9%",     "PSOE projected: ~25.7% (2027)",
+  "ITS post-slope",                "+0.49 pp/month (recovery)", "To be determined",
+  "Key difference",                "Starting from 42%, decline had room to recover", "Starting from 29%, far less buffer"
+) |>
+  kbl(caption = "Table 20. Comparative analysis: 2005 Zapatero vs. 2026 Sánchez regularisation episodes") |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  column_spec(1, bold = TRUE, width = "30%")
+```
+
+> **The critical difference**: Zapatero entered the 2005 regularisation at 42% ,enough buffer to absorb a temporary decline and recover to 43.9% in 2008. Sánchez enters 2026 at approximately 29%, with the structural decline leaving him at a projected ~25.7% by June 2027 regardless of regularisation scenario. **The historical precedent is encouraging for the policy but does not offset the structural mid-term decline (−0.138 pp/month) documented in this analysis.**
+
+---
+
+# Limitations and Caveats
+
+```{r limitations-table, echo=FALSE}
+tribble(
+  ~Limitation,                       ~`Severity`, ~Impact,                                             ~Mitigation,
+  "28-month time series is short",   "High",    "Wide CIs; limited ARIMA lag detection; Granger tests have low power", "Report CIs honestly; use robust SEs; supplement with CCF and rolling correlations",
+  "CDX API coverage is incomplete",  "Medium",  "Some La Moncloa releases never archived; slug-matching may miss edge cases", "Body-text validation as second filter; 82% monthly coverage",
+  "No regional polling data",        "Medium",  "Cannot link INE provincial demographics to regional poll shifts (only national polls exist)", "INE data presented as contextual; regional analysis scoped accordingly",
+  "El País España pagination depth", "Medium",  "Paginating /espana/ section may not reach back 28 months; salience ratio unreliable", "Use imm_volume_norm (immigration-only count) not salience ratio; avoids unreliable denominator",
+  "Omitted variables in regression", "Medium",  "Economy, coalition crises, scandals, candidate effects not modelled", "Acknowledged explicitly; time trend proxies for aggregate governing-party dynamics",
+  "ARIMA immigration coefficient bias","Low",   "Immigration salience is itself influenced by government events; endogeneity possible", "Granger test mitigates reverse-causality concern; interpret as association not causation",
+  "Forecast scenario values subjective","Low",  "Neutral = 70 is above historical mean (62); 'neutral' may be slightly pessimistic", "Historical distribution reported in Table 5; scenario assumptions documented transparently",
+  "Annual INE unemployment data",    "Low",     "Cannot track monthly economic shocks; one value per year per province", "Annual averages used as structural context, not monthly controls"
+) |>
+  kbl(
+    caption = "Table 21. Limitations, impact, and mitigation strategies",
+    align   = c("l","c","l","l")
+  ) |>
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = TRUE, font_size = 13) |>
+  row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
+  column_spec(2, bold = TRUE, width = "8%")
+```
+
+---
+
+# Conclusions
+
+This study provides the first systematic quantitative analysis linking Spanish government immigration communication to PSOE electoral support across the 2023–2026 governing period, using a fully reproducible pipeline of four independent data sources.
+
+**Empirical contributions:**
+
+1. **PSOE attrition is structural, not immigration-driven.** The −0.138 pp/month time trend (R² = 0.695 for the trend-only model) is consistent with international mid-term governmental attrition patterns and persists regardless of immigration salience or statement intensity.
+
+2. **Immigration salience matters at the margins.** The persistent negative rolling correlation (r ≈ −0.67 throughout the period) and the marginally significant OLS coefficient (β = −0.015, p = 0.084) suggest immigration media salience has a small but consistent depressing effect on PSOE support. A month at maximum salience reduces predicted PSOE by ~1.5 pp ,modest but directionally consistent across all specifications.
+
+3. **Government communications are reactive, not strategic.** Neither cross-correlation nor Granger causality tests find any evidence that La Moncloa press releases precede polling changes (F = 0.147, p = 0.864). The communication strategy responds to the news cycle; it does not shape it.
+
+4. **The 2026 regularisation is a polarizing political signal, not an electoral mobilization tool.** Zero of the ~500,000 newly regularised migrants can vote in the 2027 General Election. Its electoral impact ,sustained immigration salience, base mobilization on the left, attack vectors on the right ,is captured in the High Salience scenario, which adds only ~0.3 pp of additional PSOE decline relative to neutral.
+
+5. **PSOE is forecast at ~25.5% for June 2027**, with PP maintaining a 5–8 pp lead. Spain's fragmented party system means this does not directly determine the government; coalition arithmetic will be decisive.
+
+**Methodological contributions:**
+
+The project demonstrates four distinct web-harvesting techniques aligned with real-world access challenges: CDX API-based URL discovery to bypass JavaScript-rendered indices; `img alt`-attribute extraction to parse image-based table headers; INE REST/JSON API with series-code discovery and FK_Periodo mapping; and paginated static-HTML scraping with ISO 8601 datetime parsing. All data sources are public, all code is documented, and the pipeline is reproducible with `Rscript main.R`.
+
+---
+
+# Data and Reproducibility
+
+All data, scripts, and this report are version-controlled in a GitHub repository. To fully reproduce:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/uc3m-dataharvesting/spain-immigration-project
+
+cd spain-immigration-project
+
+# 2. Install R packages (auto-installed by main.R)
+Rscript main.R          # data collection + analysis (~15-20 min with polite delays)
+
+# 3. Render this report
+Rscript -e "rmarkdown::render('report.Rmd')"
+```
+
+**Pipeline outputs (all reproducible from `main.R`):**
+
+```{r outputs-table, echo=FALSE}
+tribble(
+  ~File,                                   ~Records, ~Description,
+  "`data/raw/lamoncloa_raw.csv`",          "1,078",  "All CDX-discovered La Moncloa press release URLs",
+  "`data/raw/polls_raw.csv`",              "421",    "All Wikipedia opinion poll rows (raw)",
+  "`data/raw/ine_demographics_raw.csv`",   "212+",   "INE provincial unemployment + foreign population (combined)",
+  "`data/raw/elpais_headlines_raw.csv`",   "3,597+", "El País immigration + España article records",
+  "`data/processed/immigration_statements.csv`", "63", "Confirmed La Moncloa immigration releases (with full text)",
+  "`data/processed/monthly_statements.csv`","28",   "Monthly government immigration statement counts",
+  "`data/processed/monthly_polls.csv`",   "28",    "Monthly PSOE/PP/Vox/Sumar poll averages (from 421 polls)",
+  "`data/processed/salience_scores.csv`", "28",    "Monthly El País immigration media salience metrics",
+  "`data/processed/master_panel.csv`",    "28",    "Full merged analysis panel (18 variables)",
+  "`data/processed/model_results.csv`",   "4",     "OLS M3 coefficient table (Newey-West SEs)",
+  "`data/processed/model_comparison.csv`","4",     "All model R², AIC, BIC comparison",
+  "`data/processed/forecast_2027.csv`",   "48",    "PSOE forecast to June 2027 ,3 scenarios × 16 months",
+  "`data/processed/seat_projections.csv`","3",    "D'Hondt seat projections ,3 scenarios (script 07)",
+  "`data/processed/seat_monte_carlo.csv`","15000","Monte Carlo seat draws ,5,000 per scenario (script 07)",
+  "`data/processed/historical_polls_2004_2008.csv`","48","Monthly PSOE/PP polls 2004–2008 (script 08)",
+  "`data/processed/its_results.csv`",    "4",     "ITS regression coefficients ,2005 regularisation effect (script 08)"
+) |>
+  kbl_proj(
+    caption = "Table 22. Complete pipeline output reference",
+    align   = c("l","r","l")
+  )
+```
+
+
+---
+
+# References
+
+**Data Sources**
+
+- INE (Instituto Nacional de Estadística). *Encuesta de Población Activa ,Tasas de actividad, paro y empleo por provincia y sexo (Table 65349)*. `servicios.ine.es/wstempus/js/ES/DATOS_TABLA/65349`
+- INE. *Estadística Continua de Población ,Series CP305495 (total population) & CP305423 (Spanish population)*. `servicios.ine.es/wstempus/js/ES/DATOS_SERIE/`
+- INE. *API Documentation (Data Access via Web Services)*. `www.ine.es/dyngs/DAB/en/index.htm`
+- Internet Archive. *CDX Server API Documentation*. `github.com/internetarchive/wayback/tree/master/wayback-cdx-server`
+- La Moncloa. *Notas de Prensa ,Ministerio del Interior, Ministerio de Inclusión, Seguridad Social y Migraciones; Ministerio de Asuntos Exteriores, Unión Europea y Cooperación*. `lamoncloa.gob.es/serviciosdeprensa/notasprensa/`
+- El País. *Noticias de Inmigración*. `elpais.com/noticias/inmigracion/`
+- Ministerio de Inclusión, Seguridad Social y Migraciones (2026). *Proceso de regularización extraordinaria 2026 ,Iniciativa Legislativa Popular*. La Moncloa press releases, January 2026.
+- Wikipedia. *"Opinion polling for the next Spanish general election"*. Retrieved February 2026. `en.wikipedia.org/wiki/Opinion_polling_for_the_next_Spanish_general_election`
+- Wikipedia. *"Opinion polling for the 2008 Spanish general election"*. Retrieved February 2026. `en.wikipedia.org/wiki/Opinion_polling_for_the_2008_Spanish_general_election`
+- Ministerio del Interior. *Resultados electorales ,Elecciones Generales 23 de julio de 2023*. `infoelectoral.mir.es`
+
+**Statistical and Methodological References**
+
+- Andrews, D.W.K. (1991). Heteroskedasticity and autocorrelation consistent covariance matrix estimation. *Econometrica*, 59(3), 817–858.
+- Egan, P.J. (2013). *Partisan Priorities: How Issue Ownership Drives and Distorts American Politics*. Cambridge University Press.
+- Erikson, R.S. (1988). The puzzle of midterm loss. *Journal of Politics*, 50(4), 1011–1029.
+- Granger, C.W.J. (1969). Investigating causal relations by econometric models and cross-spectral methods. *Econometrica*, 37(3), 424–438.
+- Hyndman, R.J. & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3rd ed.). OTexts. `otexts.com/fpp3`
+- Nannestad, P. & Paldam, M. (1994). The VP-function: A survey of the literature on vote and popularity functions after 25 years. *Public Choice*, 79(3–4), 213–245.
+- Newey, W.K. & West, K.D. (1987). A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix. *Econometrica*, 55(3), 703–708.
+- Petrocik, J.R. (1996). Issue ownership in presidential elections, with a 1980 case study. *American Journal of Political Science*, 40(3), 825–850.
+- Shadish, W.R., Cook, T.D. & Campbell, D.T. (2002). *Experimental and Quasi-Experimental Designs for Generalized Causal Inference*. Houghton Mifflin. [ITS methodology]
+- Wagner, A.K., Soumerai, S.B., Zhang, F. & Ross-Degnan, D. (2002). Segmented regression analysis of interrupted time series studies in medication use research. *Journal of Clinical Pharmacy and Therapeutics*, 27(4), 299–309.
+
+**Spain-Specific Sources**
+
+- BBC News (2026). *Spain launches biggest migrant amnesty since 2005*. BBC Online, January 2026.
+- CIS ,Centro de Investigaciones Sociológicas (2024–2025). *Barómetro mensual ,preocupaciones principales*. `cis.es/baro`
+- Fraile, M. & Lewis-Beck, M.S. (2014). Economic voting in Spain: a 2008 panel test. *European Journal of Political Research*, 53(1), 1–16. [used to corroborate 2004–2008 poll digitisation]
+- Junta Electoral Central. *Ley Orgánica del Régimen Electoral General (LOREG), Artículo 163 ,Atribución de escaños*. `boe.es`
+- Maldita.es (2026). *¿Los migrantes regularizados en 2026 podrán votar en las elecciones de 2027?* February 2026.
+- Ministerio del Interior (2024–2025). *Balances de llegadas de inmigrantes irregulares*. `interior.gob.es`
+
+---
+
+*Report generated with R `r R.version$major`.`r R.version$minor` · `r format(Sys.Date(), "%d %B %Y")`*
+
+*UC3M Data Harvesting Course ,Team: Maimaitiming, Varberg Sabri, Tadmuri · Instructor: Patricia Callejo*

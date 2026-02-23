@@ -1,0 +1,213 @@
+province,year,unemployment_rate,n_quarters
+Albacete,2022,12.8475,4
+Albacete,2023,11.9575,4
+Albacete,2024,11.315,4
+Albacete,2025,11.3125,4
+Alicante/Alacant,2022,14.645,4
+Alicante/Alacant,2023,13.3925,4
+Alicante/Alacant,2024,13.64,4
+Alicante/Alacant,2025,12.5075,4
+Almería,2022,17.15,4
+Almería,2023,15.9725,4
+Almería,2024,15.285,4
+Almería,2025,13.8625,4
+Araba/Álava,2022,9.19,4
+Araba/Álava,2023,7.2025,4
+Araba/Álava,2024,8.5675,4
+Araba/Álava,2025,7.1975,4
+Asturias,2022,12.5125,4
+Asturias,2023,12.1225,4
+Asturias,2024,10.135,4
+Asturias,2025,8.8325,4
+Badajoz,2022,17.6225,4
+Badajoz,2023,18.675,4
+Badajoz,2024,15.395,4
+Badajoz,2025,14.38,4
+"Balears, Illes",2022,10.735,4
+"Balears, Illes",2023,10.48,4
+"Balears, Illes",2024,9.45,4
+"Balears, Illes",2025,8.94,4
+Barcelona,2022,9.925,4
+Barcelona,2023,9.120000000000001,4
+Barcelona,2024,8.4525,4
+Barcelona,2025,8.195,4
+Bizkaia,2022,9.41,4
+Bizkaia,2023,8.05,4
+Bizkaia,2024,8.98,4
+Bizkaia,2025,7.7575,4
+Burgos,2022,8.555,4
+Burgos,2023,7.717499999999999,4
+Burgos,2024,6.9275,4
+Burgos,2025,7.6025,4
+Cantabria,2022,9.575,4
+Cantabria,2023,8.1425,4
+Cantabria,2024,7.8475,4
+Cantabria,2025,7.3375,4
+Castellón/Castelló,2022,12.1875,4
+Castellón/Castelló,2023,14.7575,4
+Castellón/Castelló,2024,13.6525,4
+Castellón/Castelló,2025,11.1175,4
+Ceuta,2022,29.8525,4
+Ceuta,2023,29.98,4
+Ceuta,2024,27.4075,4
+Ceuta,2025,24.3575,4
+Ciudad Real,2022,19.355,4
+Ciudad Real,2023,16.475,4
+Ciudad Real,2024,16.9225,4
+Ciudad Real,2025,15.235,4
+"Coruña, A",2022,10.1,4
+"Coruña, A",2023,9.1025,4
+"Coruña, A",2024,7.98,4
+"Coruña, A",2025,7.2125,4
+Cuenca,2022,9.6075,4
+Cuenca,2023,11.4075,4
+Cuenca,2024,10.495,4
+Cuenca,2025,10.4175,4
+Cáceres,2022,16.7775,4
+Cáceres,2023,14.94,4
+Cáceres,2024,15.7125,4
+Cáceres,2025,15.4375,4
+Cádiz,2022,23.4675,4
+Cádiz,2023,22.255,4
+Cádiz,2024,20.9725,4
+Cádiz,2025,18.725,4
+Córdoba,2022,19.4175,4
+Córdoba,2023,18.4075,4
+Córdoba,2024,16.6175,4
+Córdoba,2025,17.3,4
+Gipuzkoa,2022,7.87,4
+Gipuzkoa,2023,7.465,4
+Gipuzkoa,2024,6.3575,4
+Gipuzkoa,2025,6.6425,4
+Girona,2022,8.9575,4
+Girona,2023,9.9575,4
+Girona,2024,9.467500000000001,4
+Girona,2025,8.3725,4
+Granada,2022,20.9575,4
+Granada,2023,20.5075,4
+Granada,2024,21.435,4
+Granada,2025,18.5,4
+Guadalajara,2022,11.1725,4
+Guadalajara,2023,9.865,4
+Guadalajara,2024,10.875,4
+Guadalajara,2025,10.497499999999999,4
+Huelva,2022,17.494999999999997,4
+Huelva,2023,18.3275,4
+Huelva,2024,15.125,4
+Huelva,2025,13.1625,4
+Huesca,2022,9.42,4
+Huesca,2023,8.4475,4
+Huesca,2024,9.129999999999999,4
+Huesca,2025,6.6825,4
+Jaén,2022,18.975,4
+Jaén,2023,18.4725,4
+Jaén,2024,19.335,4
+Jaén,2025,15.9025,4
+León,2022,10.629999999999999,4
+León,2023,10.1325,4
+León,2024,9.6125,4
+León,2025,10.155,4
+Lleida,2022,9.995000000000001,4
+Lleida,2023,7.592499999999999,4
+Lleida,2024,6.635,4
+Lleida,2025,5.2,4
+Lugo,2022,9.125,4
+Lugo,2023,8.22,4
+Lugo,2024,7.09,4
+Lugo,2025,6.3225,4
+Madrid,2022,11.215,4
+Madrid,2023,9.955,4
+Madrid,2024,8.975,4
+Madrid,2025,7.9675,4
+Melilla,2022,25.9025,4
+Melilla,2023,26.6325,4
+Melilla,2024,28.314999999999998,4
+Melilla,2025,24.817500000000003,4
+Murcia,2022,13.585,4
+Murcia,2023,12.775,4
+Murcia,2024,12.7325,4
+Murcia,2025,12.1025,4
+Málaga,2022,18.4425,4
+Málaga,2023,16.822499999999998,4
+Málaga,2024,13.559999999999999,4
+Málaga,2025,12.9825,4
+Navarra,2022,9.735,4
+Navarra,2023,9.945,4
+Navarra,2024,7.64,4
+Navarra,2025,7.6899999999999995,4
+Ourense,2022,11.4875,4
+Ourense,2023,9.57,4
+Ourense,2024,10.98,4
+Ourense,2025,9.48,4
+Palencia,2022,9.5075,4
+Palencia,2023,8.735,4
+Palencia,2024,7,4
+Palencia,2025,7.61,4
+"Palmas, Las",2022,17.32,4
+"Palmas, Las",2023,15.0475,4
+"Palmas, Las",2024,14.015,4
+"Palmas, Las",2025,14.705,4
+Pontevedra,2022,12.657499999999999,4
+Pontevedra,2023,10.9925,4
+Pontevedra,2024,11.2775,4
+Pontevedra,2025,10.004999999999999,4
+"Rioja, La",2022,9.55,4
+"Rioja, La",2023,9.375,4
+"Rioja, La",2024,9.745000000000001,4
+"Rioja, La",2025,8.1175,4
+Salamanca,2022,11.2225,4
+Salamanca,2023,10.82,4
+Salamanca,2024,11.8475,4
+Salamanca,2025,7.9775,4
+Santa Cruz de Tenerife,2022,18.005000000000003,4
+Santa Cruz de Tenerife,2023,17.2425,4
+Santa Cruz de Tenerife,2024,13.48,4
+Santa Cruz de Tenerife,2025,12.2,4
+Segovia,2022,8.2725,4
+Segovia,2023,8.065,4
+Segovia,2024,6.6925,4
+Segovia,2025,5.91,4
+Sevilla,2022,17.3875,4
+Sevilla,2023,16.7325,4
+Sevilla,2024,13.9525,4
+Sevilla,2025,13.865,4
+Soria,2022,8.1,4
+Soria,2023,7.785,4
+Soria,2024,6.34,4
+Soria,2025,7.7275,4
+Tarragona,2022,11.395,4
+Tarragona,2023,11.275,4
+Tarragona,2024,12.6975,4
+Tarragona,2025,11.2325,4
+Teruel,2022,8.94,4
+Teruel,2023,9.3925,4
+Teruel,2024,7.197500000000001,4
+Teruel,2025,7.63,4
+Toledo,2022,15.185,4
+Toledo,2023,13.64,4
+Toledo,2024,13.87,4
+Toledo,2025,13.525,4
+Valencia/València,2022,12.5525,4
+Valencia/València,2023,11.97,4
+Valencia/València,2024,11.7025,4
+Valencia/València,2025,11.004999999999999,4
+Valladolid,2022,8.5375,4
+Valladolid,2023,9.372499999999999,4
+Valladolid,2024,10.005,4
+Valladolid,2025,8.7925,4
+Zamora,2022,12.385,4
+Zamora,2023,13.6375,4
+Zamora,2024,12.879999999999999,4
+Zamora,2025,10.6775,4
+Zaragoza,2022,9.76,4
+Zaragoza,2023,8.4975,4
+Zaragoza,2024,8.045,4
+Zaragoza,2025,8.4275,4
+Ávila,2022,13.935,4
+Ávila,2023,11.635,4
+Ávila,2024,11.1425,4
+Ávila,2025,8.879999999999999,4
+NA,2022,13.035,4
+NA,2023,12.185,4
+NA,2024,11.344999999999999,4
+NA,2025,10.5075,4

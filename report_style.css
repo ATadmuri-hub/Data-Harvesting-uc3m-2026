@@ -1,0 +1,434 @@
+/* ============================================================
+   report_style.css  —  Spain Immigration Report
+   Minimal targeted overrides on top of Bootstrap flatly theme.
+   Font: Inter (body/headings) + JetBrains Mono (code)
+   ============================================================ */
+
+/* ── Import fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── 1. Global font + body ───────────────────────────────── */
+body,
+.main-container,
+p, li, td, th, blockquote {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Helvetica, Arial, sans-serif !important;
+  font-size: 15px;
+  line-height: 1.72;
+  color: #1e2128;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 2. Headings ─────────────────────────────────────────── */
+h1, h2, h3, h4, h5,
+.title, .subtitle, .author {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Helvetica, Arial, sans-serif !important;
+  letter-spacing: -0.015em;
+}
+
+h1 {
+  font-size: 1.9em;
+  font-weight: 700;
+  color: #1D3557;
+  border-bottom: 2.5px solid #1D3557;
+  padding-bottom: 8px;
+  margin-top: 1.8em;
+  margin-bottom: 0.7em;
+}
+
+h2 {
+  font-size: 1.42em;
+  font-weight: 600;
+  color: #1D3557;
+  border-bottom: 1px solid #e0e4eb;
+  padding-bottom: 5px;
+  margin-top: 2.0em;
+  margin-bottom: 0.6em;
+}
+
+h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: #457B9D;
+  margin-top: 1.5em;
+  margin-bottom: 0.45em;
+}
+
+h4 {
+  font-size: 1.02em;
+  font-weight: 600;
+  color: #495057;
+  margin-top: 1.2em;
+  margin-bottom: 0.35em;
+}
+
+/* Report title block */
+h1.title {
+  font-size: 2.1em;
+  font-weight: 700;
+  border-bottom: none;
+  margin-top: 0.4em;
+}
+
+h3.subtitle {
+  font-size: 1.1em;
+  font-weight: 400;
+  color: #5a6474;
+  border-bottom: none;
+  margin-top: 0;
+}
+
+/* ── 3. Widen the content area ───────────────────────────── */
+.main-container {
+  max-width: 1240px !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+  background-color: #ffffff;
+}
+
+/* ── 4. All figures fully visible — never clipped ──────────
+   Nuclear approach: override whatever knitr sets via
+   the out.width attribute so every figure fills container.  */
+/* Chart/figure images — fill container; knitr already sets width="100%" on output */
+img.figure-img,
+.figure img,
+figure img {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* All other images — responsive but not forced full-width */
+img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.figure,
+figure {
+  width: 100%;
+  overflow: visible;
+  margin: 1.8em 0;
+  text-align: center;
+}
+
+/* ── 5. Plotly / htmlwidget charts ───────────────────────── */
+.plotly,
+.html-widget,
+.html-widget-static-bound {
+  width: 100% !important;
+  min-height: 420px;
+}
+
+/* ── 6. Figure captions ──────────────────────────────────── */
+p.caption,
+.figure p.caption,
+figcaption {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.82em;
+  font-weight: 400;
+  color: #5a6474;
+  font-style: italic;
+  text-align: center;
+  margin-top: 8px;
+  line-height: 1.5;
+  padding: 0;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── 7. Tables: scrollable, never overflow ───────────────── */
+/* Scrollable wrapper — div.table-responsive is added by kableExtra */
+div.table-responsive,
+div[style*="overflow"] {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+table.table {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px;
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse; /* effective on display:table (the default) */
+}
+
+table.table th {
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+table.table td {
+  padding: 8px 14px;
+  vertical-align: middle;
+}
+
+table.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: #f7f9fd;
+}
+
+/* ── 8. Blockquotes / callout boxes ─────────────────────── */
+blockquote {
+  background: #eef3f9;
+  border-left: 4px solid #1D3557;
+  padding: 14px 22px;
+  border-radius: 0 5px 5px 0;
+  margin: 1.4em 0;
+  color: #2c3340;
+  font-size: 0.96em;
+  line-height: 1.68;
+}
+
+blockquote p:last-child { margin-bottom: 0; }
+
+/* Warning callout (⚠️ or starts with bold) */
+blockquote:has(> p > strong:first-child) {
+  background: #fff8e1;
+  border-left-color: #e6a817;
+}
+
+/* ── 9. Code blocks ──────────────────────────────────────── */
+pre, code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New',
+               monospace !important;
+}
+
+pre {
+  font-size: 0.87em;
+  background: #f4f6f9;
+  border: 1px solid #dde1e7;
+  border-radius: 5px;
+  padding: 13px 17px;
+  overflow-x: auto;
+  max-width: 100%;
+  line-height: 1.55;
+}
+
+code:not(pre code) {
+  font-size: 0.84em;
+  color: #b5294c;
+  background: #fdf2f4;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ── 10. Horizontal rules ─────────────────────────────────── */
+hr {
+  border: none;
+  border-top: 1.5px solid #e0e4eb;
+  margin: 2.4em 0;
+}
+
+/* ── 11. TOC ─────────────────────────────────────────────── */
+#TOC {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.87em;
+  line-height: 1.5;
+  background: #f8f9fb;
+  border: 1px solid #dde2ea;
+  border-radius: 7px;
+  padding: 14px 18px;
+}
+
+#TOC a { color: #1D3557; text-decoration: none; }
+#TOC a:hover { color: #1a6fa8; text-decoration: underline; }
+
+/* ── 12. Links ───────────────────────────────────────────── */
+a { color: #1a6fa8; }
+a:hover { color: #E63946; text-decoration: underline; }
+
+/* ── 13. Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main-container {
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  table.table { font-size: 12px; }
+  table.table td, table.table th { padding: 6px 10px; }
+}
+
+/* ── 14. Print ───────────────────────────────────────────── */
+@media print {
+  .main-container { max-width: 100% !important; box-shadow: none; }
+  #TOC, .code-folding-btn { display: none; }
+}
+
+/* ── 15. Hide default rmarkdown title block ──────────────── */
+h1.title,
+h3.subtitle,
+h4.author,
+h4.date {
+  display: none !important;
+}
+
+/* ── 16. Custom cover page ───────────────────────────────── */
+.cover-page {
+  margin: -10px -28px 2.8em -28px;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.14);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Banner */
+.cover-banner {
+  background: linear-gradient(135deg, #1D3557 0%, #2a5080 55%, #457B9D 100%);
+  padding: 2.8em 3em 2.6em;
+  color: white;
+  position: relative;
+}
+
+.cover-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #E63946 0%, #F4A261 50%, #E63946 100%);
+}
+
+.cover-tag {
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-bottom: 1.2em;
+}
+
+.cover-title {
+  font-size: 2.05em;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75em;
+  color: #ffffff;
+}
+
+.cover-subtitle {
+  font-size: 0.98em;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.80);
+  line-height: 1.6;
+}
+
+.cover-period {
+  color: #F4A261;
+  font-weight: 600;
+}
+
+/* Meta bar */
+.cover-meta {
+  background: #f4f6fa;
+  padding: 1.5em 3em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.4em;
+  border-top: 1px solid #dde2ea;
+}
+
+/* Authors */
+.cover-authors {
+  display: flex;
+  gap: 2em;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.cover-author {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-name {
+  font-weight: 600;
+  font-size: 0.88em;
+  color: #1D3557;
+  line-height: 1.3;
+}
+
+.author-affil {
+  font-size: 0.74em;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Stats row */
+.cover-stats {
+  display: flex;
+  gap: 0.6em;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cover-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 44px;
+}
+
+.stat-num {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #1D3557;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.67em;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.cover-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: #d0d5e0;
+  margin: 0 0.3em;
+  flex-shrink: 0;
+}
+
+/* Footer strip */
+.cover-footer {
+  background: #1D3557;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.75em;
+  text-align: center;
+  padding: 0.55em 2em;
+  letter-spacing: 0.02em;
+}
+
+.cover-footer code {
+  color: #F4A261;
+  background: transparent;
+  font-size: 0.95em;
+  padding: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cover-page  { margin: -10px -12px 2em -12px; }
+  .cover-banner { padding: 2em 1.4em 1.8em; }
+  .cover-title  { font-size: 1.45em; }
+  .cover-meta   { padding: 1.2em 1.4em; flex-direction: column; align-items: flex-start; }
+  .cover-stats  { display: none; }
+  .cover-authors { gap: 1.2em; }
+}

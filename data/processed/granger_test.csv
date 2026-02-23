@@ -1,0 +1,5 @@
+Res.Df,Df,F,Pr(>F),predictor,model
+20,NA,NA,NA,n_statements,Restricted
+22,-2,0.14701958913905194,0.8642014925814492,n_statements,Unrestricted
+20,NA,NA,NA,imm_volume_norm,Restricted
+22,-2,0.3042761001923563,0.7410118110540852,imm_volume_norm,Unrestricted

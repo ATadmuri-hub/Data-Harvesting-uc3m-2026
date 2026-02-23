@@ -1,0 +1,216 @@
+province,year,indicator,value
+Albacete,2022,unemployment_rate,12.8475
+Albacete,2023,unemployment_rate,11.9575
+Albacete,2024,unemployment_rate,11.315
+Albacete,2025,unemployment_rate,11.3125
+Alicante/Alacant,2022,unemployment_rate,14.645
+Alicante/Alacant,2023,unemployment_rate,13.3925
+Alicante/Alacant,2024,unemployment_rate,13.64
+Alicante/Alacant,2025,unemployment_rate,12.5075
+Almería,2022,unemployment_rate,17.15
+Almería,2023,unemployment_rate,15.9725
+Almería,2024,unemployment_rate,15.285
+Almería,2025,unemployment_rate,13.8625
+Araba/Álava,2022,unemployment_rate,9.19
+Araba/Álava,2023,unemployment_rate,7.2025
+Araba/Álava,2024,unemployment_rate,8.5675
+Araba/Álava,2025,unemployment_rate,7.1975
+Asturias,2022,unemployment_rate,12.5125
+Asturias,2023,unemployment_rate,12.1225
+Asturias,2024,unemployment_rate,10.135
+Asturias,2025,unemployment_rate,8.8325
+Badajoz,2022,unemployment_rate,17.6225
+Badajoz,2023,unemployment_rate,18.675
+Badajoz,2024,unemployment_rate,15.395
+Badajoz,2025,unemployment_rate,14.38
+"Balears, Illes",2022,unemployment_rate,10.735
+"Balears, Illes",2023,unemployment_rate,10.48
+"Balears, Illes",2024,unemployment_rate,9.45
+"Balears, Illes",2025,unemployment_rate,8.94
+Barcelona,2022,unemployment_rate,9.925
+Barcelona,2023,unemployment_rate,9.120000000000001
+Barcelona,2024,unemployment_rate,8.4525
+Barcelona,2025,unemployment_rate,8.195
+Bizkaia,2022,unemployment_rate,9.41
+Bizkaia,2023,unemployment_rate,8.05
+Bizkaia,2024,unemployment_rate,8.98
+Bizkaia,2025,unemployment_rate,7.7575
+Burgos,2022,unemployment_rate,8.555
+Burgos,2023,unemployment_rate,7.717499999999999
+Burgos,2024,unemployment_rate,6.9275
+Burgos,2025,unemployment_rate,7.6025
+Cantabria,2022,unemployment_rate,9.575
+Cantabria,2023,unemployment_rate,8.1425
+Cantabria,2024,unemployment_rate,7.8475
+Cantabria,2025,unemployment_rate,7.3375
+Castellón/Castelló,2022,unemployment_rate,12.1875
+Castellón/Castelló,2023,unemployment_rate,14.7575
+Castellón/Castelló,2024,unemployment_rate,13.6525
+Castellón/Castelló,2025,unemployment_rate,11.1175
+Ceuta,2022,unemployment_rate,29.8525
+Ceuta,2023,unemployment_rate,29.98
+Ceuta,2024,unemployment_rate,27.4075
+Ceuta,2025,unemployment_rate,24.3575
+Ciudad Real,2022,unemployment_rate,19.355
+Ciudad Real,2023,unemployment_rate,16.475
+Ciudad Real,2024,unemployment_rate,16.9225
+Ciudad Real,2025,unemployment_rate,15.235
+"Coruña, A",2022,unemployment_rate,10.1
+"Coruña, A",2023,unemployment_rate,9.1025
+"Coruña, A",2024,unemployment_rate,7.98
+"Coruña, A",2025,unemployment_rate,7.2125
+Cuenca,2022,unemployment_rate,9.6075
+Cuenca,2023,unemployment_rate,11.4075
+Cuenca,2024,unemployment_rate,10.495
+Cuenca,2025,unemployment_rate,10.4175
+Cáceres,2022,unemployment_rate,16.7775
+Cáceres,2023,unemployment_rate,14.94
+Cáceres,2024,unemployment_rate,15.7125
+Cáceres,2025,unemployment_rate,15.4375
+Cádiz,2022,unemployment_rate,23.4675
+Cádiz,2023,unemployment_rate,22.255
+Cádiz,2024,unemployment_rate,20.9725
+Cádiz,2025,unemployment_rate,18.725
+Córdoba,2022,unemployment_rate,19.4175
+Córdoba,2023,unemployment_rate,18.4075
+Córdoba,2024,unemployment_rate,16.6175
+Córdoba,2025,unemployment_rate,17.3
+Gipuzkoa,2022,unemployment_rate,7.87
+Gipuzkoa,2023,unemployment_rate,7.465
+Gipuzkoa,2024,unemployment_rate,6.3575
+Gipuzkoa,2025,unemployment_rate,6.6425
+Girona,2022,unemployment_rate,8.9575
+Girona,2023,unemployment_rate,9.9575
+Girona,2024,unemployment_rate,9.467500000000001
+Girona,2025,unemployment_rate,8.3725
+Granada,2022,unemployment_rate,20.9575
+Granada,2023,unemployment_rate,20.5075
+Granada,2024,unemployment_rate,21.435
+Granada,2025,unemployment_rate,18.5
+Guadalajara,2022,unemployment_rate,11.1725
+Guadalajara,2023,unemployment_rate,9.865
+Guadalajara,2024,unemployment_rate,10.875
+Guadalajara,2025,unemployment_rate,10.497499999999999
+Huelva,2022,unemployment_rate,17.494999999999997
+Huelva,2023,unemployment_rate,18.3275
+Huelva,2024,unemployment_rate,15.125
+Huelva,2025,unemployment_rate,13.1625
+Huesca,2022,unemployment_rate,9.42
+Huesca,2023,unemployment_rate,8.4475
+Huesca,2024,unemployment_rate,9.129999999999999
+Huesca,2025,unemployment_rate,6.6825
+Jaén,2022,unemployment_rate,18.975
+Jaén,2023,unemployment_rate,18.4725
+Jaén,2024,unemployment_rate,19.335
+Jaén,2025,unemployment_rate,15.9025
+León,2022,unemployment_rate,10.629999999999999
+León,2023,unemployment_rate,10.1325
+León,2024,unemployment_rate,9.6125
+León,2025,unemployment_rate,10.155
+Lleida,2022,unemployment_rate,9.995000000000001
+Lleida,2023,unemployment_rate,7.592499999999999
+Lleida,2024,unemployment_rate,6.635
+Lleida,2025,unemployment_rate,5.2
+Lugo,2022,unemployment_rate,9.125
+Lugo,2023,unemployment_rate,8.22
+Lugo,2024,unemployment_rate,7.09
+Lugo,2025,unemployment_rate,6.3225
+Madrid,2022,unemployment_rate,11.215
+Madrid,2023,unemployment_rate,9.955
+Madrid,2024,unemployment_rate,8.975
+Madrid,2025,unemployment_rate,7.9675
+Melilla,2022,unemployment_rate,25.9025
+Melilla,2023,unemployment_rate,26.6325
+Melilla,2024,unemployment_rate,28.314999999999998
+Melilla,2025,unemployment_rate,24.817500000000003
+Murcia,2022,unemployment_rate,13.585
+Murcia,2023,unemployment_rate,12.775
+Murcia,2024,unemployment_rate,12.7325
+Murcia,2025,unemployment_rate,12.1025
+Málaga,2022,unemployment_rate,18.4425
+Málaga,2023,unemployment_rate,16.822499999999998
+Málaga,2024,unemployment_rate,13.559999999999999
+Málaga,2025,unemployment_rate,12.9825
+Navarra,2022,unemployment_rate,9.735
+Navarra,2023,unemployment_rate,9.945
+Navarra,2024,unemployment_rate,7.64
+Navarra,2025,unemployment_rate,7.6899999999999995
+Ourense,2022,unemployment_rate,11.4875
+Ourense,2023,unemployment_rate,9.57
+Ourense,2024,unemployment_rate,10.98
+Ourense,2025,unemployment_rate,9.48
+Palencia,2022,unemployment_rate,9.5075
+Palencia,2023,unemployment_rate,8.735
+Palencia,2024,unemployment_rate,7
+Palencia,2025,unemployment_rate,7.61
+"Palmas, Las",2022,unemployment_rate,17.32
+"Palmas, Las",2023,unemployment_rate,15.0475
+"Palmas, Las",2024,unemployment_rate,14.015
+"Palmas, Las",2025,unemployment_rate,14.705
+Pontevedra,2022,unemployment_rate,12.657499999999999
+Pontevedra,2023,unemployment_rate,10.9925
+Pontevedra,2024,unemployment_rate,11.2775
+Pontevedra,2025,unemployment_rate,10.004999999999999
+"Rioja, La",2022,unemployment_rate,9.55
+"Rioja, La",2023,unemployment_rate,9.375
+"Rioja, La",2024,unemployment_rate,9.745000000000001
+"Rioja, La",2025,unemployment_rate,8.1175
+Salamanca,2022,unemployment_rate,11.2225
+Salamanca,2023,unemployment_rate,10.82
+Salamanca,2024,unemployment_rate,11.8475
+Salamanca,2025,unemployment_rate,7.9775
+Santa Cruz de Tenerife,2022,unemployment_rate,18.005000000000003
+Santa Cruz de Tenerife,2023,unemployment_rate,17.2425
+Santa Cruz de Tenerife,2024,unemployment_rate,13.48
+Santa Cruz de Tenerife,2025,unemployment_rate,12.2
+Segovia,2022,unemployment_rate,8.2725
+Segovia,2023,unemployment_rate,8.065
+Segovia,2024,unemployment_rate,6.6925
+Segovia,2025,unemployment_rate,5.91
+Sevilla,2022,unemployment_rate,17.3875
+Sevilla,2023,unemployment_rate,16.7325
+Sevilla,2024,unemployment_rate,13.9525
+Sevilla,2025,unemployment_rate,13.865
+Soria,2022,unemployment_rate,8.1
+Soria,2023,unemployment_rate,7.785
+Soria,2024,unemployment_rate,6.34
+Soria,2025,unemployment_rate,7.7275
+Tarragona,2022,unemployment_rate,11.395
+Tarragona,2023,unemployment_rate,11.275
+Tarragona,2024,unemployment_rate,12.6975
+Tarragona,2025,unemployment_rate,11.2325
+Teruel,2022,unemployment_rate,8.94
+Teruel,2023,unemployment_rate,9.3925
+Teruel,2024,unemployment_rate,7.197500000000001
+Teruel,2025,unemployment_rate,7.63
+Toledo,2022,unemployment_rate,15.185
+Toledo,2023,unemployment_rate,13.64
+Toledo,2024,unemployment_rate,13.87
+Toledo,2025,unemployment_rate,13.525
+Valencia/València,2022,unemployment_rate,12.5525
+Valencia/València,2023,unemployment_rate,11.97
+Valencia/València,2024,unemployment_rate,11.7025
+Valencia/València,2025,unemployment_rate,11.004999999999999
+Valladolid,2022,unemployment_rate,8.5375
+Valladolid,2023,unemployment_rate,9.372499999999999
+Valladolid,2024,unemployment_rate,10.005
+Valladolid,2025,unemployment_rate,8.7925
+Zamora,2022,unemployment_rate,12.385
+Zamora,2023,unemployment_rate,13.6375
+Zamora,2024,unemployment_rate,12.879999999999999
+Zamora,2025,unemployment_rate,10.6775
+Zaragoza,2022,unemployment_rate,9.76
+Zaragoza,2023,unemployment_rate,8.4975
+Zaragoza,2024,unemployment_rate,8.045
+Zaragoza,2025,unemployment_rate,8.4275
+Ávila,2022,unemployment_rate,13.935
+Ávila,2023,unemployment_rate,11.635
+Ávila,2024,unemployment_rate,11.1425
+Ávila,2025,unemployment_rate,8.879999999999999
+NA,2022,unemployment_rate,13.035
+NA,2023,unemployment_rate,12.185
+NA,2024,unemployment_rate,11.344999999999999
+NA,2025,unemployment_rate,10.5075
+Total Nacional,2020,foreign_pop_national,5275660.825355001
+Total Nacional,2021,foreign_pop_national,5346513.474555999
+Total Nacional,2022,foreign_pop_national,5493719.199497998
