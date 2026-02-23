@@ -8,9 +8,10 @@ Does the frequency and tone of official government immigration statements correl
 
 ## Team
 
--   Maiheliya Maimaitiming ,[100562134\@alumnos.uc3m.es](mailto:100562134@alumnos.uc3m.es){.email}
--   Tone Varberg Sabri ,[100570811\@alumnos.uc3m.es](mailto:100570811@alumnos.uc3m.es){.email}
--   Abdullah Tadmuri ,[100502844\@alumnos.uc3m.es](mailto:100502844@alumnos.uc3m.es){.email}
+-   Abdullah Tadmuri ,[100502844\@alumnos.uc3m.es](mailto:100502844@alumnos.uc3m.es){.email} [https://github.com/ATadmuri-hub]
+-   Maiheliya Maimaitiming ,[100562134\@alumnos.uc3m.es](mailto:100562134@alumnos.uc3m.es){.email} [https://github.com/Ines11python]
+-   Tone Varberg Sabri ,[100570811\@alumnos.uc3m.es](mailto:100570811@alumnos.uc3m.es){.email} [https://github.com/tone-vs]
+
 
 ## Data Sources
 
