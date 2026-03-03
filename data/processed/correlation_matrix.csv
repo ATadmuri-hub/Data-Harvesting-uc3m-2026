@@ -4,34 +4,23 @@ PSOE %,PP %,0.722
 PSOE %,Vox %,-0.749
 PSOE %,Gov. statements,0.047
 PSOE %,Imm. media volume,-0.674
-PSOE %,Imm. articles (raw),-0.674
 PP %,PSOE %,0.722
 PP %,PP %,1
 PP %,Vox %,-0.687
 PP %,Gov. statements,0.15
 PP %,Imm. media volume,-0.597
-PP %,Imm. articles (raw),-0.598
 Vox %,PSOE %,-0.749
 Vox %,PP %,-0.687
 Vox %,Vox %,1
 Vox %,Gov. statements,-0.246
 Vox %,Imm. media volume,0.448
-Vox %,Imm. articles (raw),0.448
 Gov. statements,PSOE %,0.047
 Gov. statements,PP %,0.15
 Gov. statements,Vox %,-0.246
 Gov. statements,Gov. statements,1
 Gov. statements,Imm. media volume,0.169
-Gov. statements,Imm. articles (raw),0.169
 Imm. media volume,PSOE %,-0.674
 Imm. media volume,PP %,-0.597
 Imm. media volume,Vox %,0.448
 Imm. media volume,Gov. statements,0.169
 Imm. media volume,Imm. media volume,1
-Imm. media volume,Imm. articles (raw),1
-Imm. articles (raw),PSOE %,-0.674
-Imm. articles (raw),PP %,-0.598
-Imm. articles (raw),Vox %,0.448
-Imm. articles (raw),Gov. statements,0.169
-Imm. articles (raw),Imm. media volume,1
-Imm. articles (raw),Imm. articles (raw),1

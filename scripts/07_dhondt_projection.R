@@ -6,11 +6,15 @@
 #         using the D'Hondt divisor method. Monte Carlo uncertainty (n = 5 000).
 #
 # Inputs:
-#   data/processed/forecast_2027.csv   — PSOE vote share projections (ARIMA)
+#   data/processed/forecast_2027.csv        — PSOE vote share projections (ARIMA)
+#   data/processed/arima_prediction_se.csv  — PSOE prediction SEs (for MC draws)
+#   data/processed/pp_psoe_correlation.csv  — empirical PP-PSOE correlation
+#   data/processed/var_forecast_2027.csv    — VAR-based PP projections
 #
 # Outputs:
 #   data/processed/seat_projections.csv   — deterministic seat projections
 #   data/processed/seat_monte_carlo.csv   — Monte Carlo seat distributions
+#   data/processed/seat_mc_summary.csv    — Monte Carlo summary statistics
 # =============================================================================
 
 library(tidyverse)
@@ -19,6 +23,63 @@ library(scales)
 cat("=== 07: D\u2019Hondt Seat Projection Model ===\n\n")
 
 set.seed(42)
+
+# ─── 0. Import data-driven parameters from script 06 ──────────────────────
+# Read ARIMA prediction SEs (to replace hardcoded MC standard deviations)
+arima_se_file <- "data/processed/arima_prediction_se.csv"
+if (file.exists(arima_se_file)) {
+  arima_pred_se <- read_csv(arima_se_file, show_col_types = FALSE)
+  # Use June 2027 SE (last forecast month)
+  jun2027_row <- arima_pred_se |> filter(year_month == as.Date("2027-06-01"))
+  if (nrow(jun2027_row) == 1) {
+    psoe_mc_sd <- jun2027_row$pred_se / 100  # convert pp → proportion
+    cat(sprintf("  PSOE MC SD from ARIMA: %.4f (%.2f pp)\n", psoe_mc_sd, jun2027_row$pred_se))
+  } else {
+    psoe_mc_sd <- 0.012  # fallback
+    cat("  WARNING: Jun 2027 row not found in arima_prediction_se.csv, using default SD=0.012\n")
+  }
+} else {
+  psoe_mc_sd <- 0.012  # fallback if script 06 hasn't been run
+  cat("  WARNING: arima_prediction_se.csv not found, using default SD=0.012\n")
+}
+
+# Read empirical PP-PSOE correlation (to replace hardcoded -0.6)
+corr_file <- "data/processed/pp_psoe_correlation.csv"
+if (file.exists(corr_file)) {
+  pp_psoe_corr <- read_csv(corr_file, show_col_types = FALSE)$pp_psoe_correlation[1]
+  cat(sprintf("  PP-PSOE correlation from data: %.3f\n", pp_psoe_corr))
+} else {
+  pp_psoe_corr <- -0.6  # fallback
+  cat("  WARNING: pp_psoe_correlation.csv not found, using default corr=-0.6\n")
+}
+
+# Read VAR forecast for data-driven PP estimates
+var_file <- "data/processed/var_forecast_2027.csv"
+if (file.exists(var_file)) {
+  var_forecast <- read_csv(var_file, show_col_types = FALSE)
+  cat("  VAR forecast loaded for PP scenario derivation\n")
+} else {
+  var_forecast <- NULL
+  cat("  WARNING: var_forecast_2027.csv not found, using hardcoded PP estimates\n")
+}
+
+# Read ARIMA forecast for data-driven PSOE scenario values
+fc_file <- "data/processed/forecast_2027.csv"
+if (file.exists(fc_file)) {
+  arima_forecast <- read_csv(fc_file, show_col_types = FALSE)
+  cat("  ARIMA forecast loaded for PSOE scenario derivation\n")
+} else {
+  arima_forecast <- NULL
+  cat("  WARNING: forecast_2027.csv not found, using hardcoded PSOE estimates\n")
+}
+
+# Scale other party SDs relative to PSOE (PP slightly less uncertain, minor parties more)
+pp_mc_sd    <- psoe_mc_sd * 0.85   # PP typically more stable
+vox_mc_sd   <- psoe_mc_sd * 0.70   # smaller party, less polling data → use proportion of PSOE SD
+sumar_mc_sd <- psoe_mc_sd * 0.70
+
+cat(sprintf("  MC SDs: PSOE=%.4f, PP=%.4f, Vox=%.4f, Sumar=%.4f\n",
+            psoe_mc_sd, pp_mc_sd, vox_mc_sd, sumar_mc_sd))
 
 # ─── 1. D'Hondt Algorithm ────────────────────────────────────────────────────
 # Standard divisor method used in Spanish general elections (LOREG Art. 163)
@@ -199,12 +260,68 @@ cat(sprintf("  Total:    model %3d  |  actual 350\n", sum(seats_2023)))
 #   - PP as the main beneficiary of PSOE decline
 #   - Sumar continuing structural decline
 
+# Derive scenario vote shares from ARIMA + VAR forecasts
+# 2023 national baselines (for computing swings)
+psoe_base_2023 <- 0.2874
+pp_base_2023   <- 0.3305
+vox_base_2023  <- 0.1239
+sumar_base_2023 <- 0.1231
+
+# PSOE: from ARIMA forecast (June 2027 point estimate per scenario)
+if (!is.null(arima_forecast)) {
+  jun27_fc <- arima_forecast |>
+    filter(year_month == as.Date("2027-06-01")) |>
+    select(scenario, psoe_forecast)
+
+  psoe_neutral <- (jun27_fc |> filter(scenario == "Neutral"))$psoe_forecast[1] / 100
+  psoe_high    <- (jun27_fc |> filter(grepl("High", scenario)))$psoe_forecast[1] / 100
+  psoe_low     <- (jun27_fc |> filter(grepl("Low", scenario)))$psoe_forecast[1] / 100
+  cat(sprintf("  PSOE from ARIMA forecast: Neutral=%.3f, High=%.3f, Low=%.3f\n",
+              psoe_neutral, psoe_high, psoe_low))
+} else {
+  psoe_neutral <- 0.257; psoe_high <- 0.254; psoe_low <- 0.259  # fallback
+  cat("  Using fallback PSOE values\n")
+}
+
+# PP: from VAR forecast (June 2027) if available, else derive from PSOE swing
+if (!is.null(var_forecast)) {
+  pp_var_jun <- (var_forecast |> filter(year_month == as.Date("2027-06-01")))$pp_var[1] / 100
+  cat(sprintf("  PP from VAR forecast: %.3f\n", pp_var_jun))
+  # Adjust PP by scenario: if PSOE drops more, PP gains more (zero-sum logic)
+  psoe_swing_neutral <- psoe_neutral - psoe_base_2023
+  psoe_swing_high    <- psoe_high    - psoe_base_2023
+  psoe_swing_low     <- psoe_low     - psoe_base_2023
+  # PP absorbs ~40% of PSOE losses (empirical estimate from Spanish elections)
+  pp_neutral <- pp_var_jun + 0.4 * (psoe_swing_neutral - psoe_swing_neutral)  # baseline = VAR
+  pp_high    <- pp_var_jun + 0.4 * (psoe_swing_high    - psoe_swing_neutral)
+  pp_low     <- pp_var_jun + 0.4 * (psoe_swing_low     - psoe_swing_neutral)
+} else {
+  # Fallback: PP gains what PSOE loses (scaled by empirical correlation)
+  pp_neutral <- pp_base_2023 + abs(pp_psoe_corr) * (psoe_base_2023 - psoe_neutral) * 0.6
+  pp_high    <- pp_base_2023 + abs(pp_psoe_corr) * (psoe_base_2023 - psoe_high) * 0.6
+  pp_low     <- pp_base_2023 + abs(pp_psoe_corr) * (psoe_base_2023 - psoe_low) * 0.6
+}
+
+# Vox: issue-ownership theory — higher immigration salience → Vox gains
+# Scenarios: high salience boosts Vox ~1pp from baseline, low reduces ~0.5pp
+vox_neutral <- vox_base_2023 - 0.004  # slight decline from 2023 peak
+vox_high    <- vox_base_2023 + 0.006  # immigration salience benefits Vox
+vox_low     <- vox_base_2023 - 0.009  # issue fades → Vox loses its wedge
+
+# Sumar: structural decline from 2023 (fragmented left, internal tensions)
+sumar_neutral <- sumar_base_2023 - 0.018  # steady erosion
+sumar_high    <- sumar_base_2023 - 0.023  # immigration debate crowds out left's agenda
+sumar_low     <- sumar_base_2023 - 0.013  # slightly better without immigration headwind
+
 scenarios_2027 <- tribble(
-  ~scenario,                      ~pp,   ~psoe, ~vox,  ~sumar,
-  "Neutral",                      0.335, 0.257, 0.120, 0.105,
-  "High salience (regularization debate)", 0.345, 0.254, 0.130, 0.100,
-  "Low salience (issue fades)",   0.325, 0.259, 0.115, 0.110
+  ~scenario,                                  ~pp,        ~psoe,        ~vox,        ~sumar,
+  "Neutral",                                  pp_neutral, psoe_neutral, vox_neutral, sumar_neutral,
+  "High salience (regularization debate)",    pp_high,    psoe_high,    vox_high,    sumar_high,
+  "Low salience (issue fades)",               pp_low,     psoe_low,     vox_low,     sumar_low
 )
+
+cat("\n  Data-derived 2027 scenario vote shares:\n")
+print(scenarios_2027 |> mutate(across(where(is.numeric), ~ round(., 3))))
 
 cat("\n2027 deterministic seat projections:\n")
 seat_projections <- scenarios_2027 |>
@@ -242,11 +359,11 @@ mc_results <- map_dfr(seq_len(nrow(scenarios_2027)), function(i) {
   sc   <- scenarios_2027[i, ]
   name <- sc$scenario
 
-  psoe_draws  <- rnorm(N_SIM, mean = sc$psoe,  sd = 0.012)
+  psoe_draws  <- rnorm(N_SIM, mean = sc$psoe,  sd = psoe_mc_sd)
   psoe_dev    <- psoe_draws - sc$psoe   # deviation from scenario centre
-  pp_draws    <- rnorm(N_SIM, mean = sc$pp + (-0.6 * psoe_dev), sd = 0.010)
-  vox_draws   <- rnorm(N_SIM, mean = sc$vox,   sd = 0.008)
-  sumar_draws <- rnorm(N_SIM, mean = sc$sumar, sd = 0.008)
+  pp_draws    <- rnorm(N_SIM, mean = sc$pp + (pp_psoe_corr * psoe_dev), sd = pp_mc_sd)
+  vox_draws   <- rnorm(N_SIM, mean = sc$vox,   sd = vox_mc_sd)
+  sumar_draws <- rnorm(N_SIM, mean = sc$sumar, sd = sumar_mc_sd)
 
   map_dfr(seq_len(N_SIM), function(j) {
     # Normalise to keep shares positive

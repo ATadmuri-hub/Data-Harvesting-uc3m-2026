@@ -1,0 +1,10 @@
+test,result
+ADF stationarity,"DF=-3.248, p=0.0982"
+Phillips-Perron,"Z=-16.079, p=0.0919"
+Ljung-Box residuals,"Q=10.661, p=0.3845"
+ARIMA order,"Regression with ARIMA(0,1,0) errors"
+Best univariate (AICc),ARIMA
+Multi-xreg selected,FALSE
+VAR lag order,2
+PP-PSOE correlation,0.722
+Residual SD (pp),0.921

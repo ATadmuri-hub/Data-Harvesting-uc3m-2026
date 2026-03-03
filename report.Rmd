@@ -49,14 +49,14 @@ library(ggcorrplot)
 library(zoo)
 library(plotly)
 
-# ── Project colour palette ───────────────────────────────────────────────────
-COL_PSOE    <- "#E63946"   # PSOE red
-COL_PP      <- "#457B9D"   # PP blue
-COL_VOX     <- "#2D6A4F"   # Vox green
-COL_IMM     <- "#F4A261"   # immigration orange
-COL_ACCENT  <- "#1D3557"   # dark navy accent
+# ── Project colour palette (Okabe-Ito colorblind-safe) ───────────────────────
+COL_PSOE    <- "#D55E00"   # vermillion
+COL_PP      <- "#0072B2"   # blue
+COL_VOX     <- "#009E73"   # bluish green
+COL_IMM     <- "#E69F00"   # amber
+COL_ACCENT  <- "#332288"   # dark indigo
 COL_NEUTRAL <- "#ADB5BD"   # neutral grey
-COL_POS     <- "#2a9d8f"   # positive teal
+COL_POS     <- "#009E73"   # bluish green (same as Vox for positive teal)
 
 # ── Report-wide ggplot2 theme ─────────────────────────────────────────────────
 THEME_PROJ <- theme_minimal(base_size = 12) +
@@ -146,6 +146,58 @@ its_res     <- tryCatch(
   error = function(e) NULL
 )
 
+# ── New model outputs (Improvements 5–10) ────────────────────────────────────
+var_forecast <- tryCatch(
+  read_csv("data/processed/var_forecast_2027.csv", show_col_types = FALSE) |>
+    mutate(year_month = as.Date(year_month)),
+  error = function(e) NULL
+)
+forecast_accuracy <- tryCatch(
+  read_csv("data/processed/forecast_accuracy.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+diagnostics_df <- tryCatch(
+  read_csv("data/processed/diagnostics_summary.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+arima_pred_se <- tryCatch(
+  read_csv("data/processed/arima_prediction_se.csv", show_col_types = FALSE) |>
+    mutate(year_month = as.Date(year_month)),
+  error = function(e) NULL
+)
+pp_psoe_corr_df <- tryCatch(
+  read_csv("data/processed/pp_psoe_correlation.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+
+# ── Extract dynamic model labels ─────────────────────────────────────────────
+# ARIMA order (read from diagnostics if available, else fallback)
+arima_order_label <- if (!is.null(diagnostics_df)) {
+  raw <- diagnostics_df |> filter(test == "ARIMA order") |> pull(result) |> first()
+  # Extract "ARIMA(p,d,q)" from strings like "Regression with ARIMA(0,1,0) errors"
+  m <- regmatches(raw, regexpr("ARIMA\\([0-9],[0-9],[0-9]\\)", raw))
+  if (length(m) == 1) m else "ARIMA(0,1,0)"
+} else { "ARIMA(0,1,0)" }
+
+best_univariate <- if (!is.null(diagnostics_df)) {
+  diagnostics_df |> filter(test == "Best univariate (AICc)") |> pull(result) |> first()
+} else { "ARIMA" }
+
+multi_xreg_used <- if (!is.null(diagnostics_df)) {
+  diagnostics_df |> filter(test == "Multi-xreg selected") |> pull(result) |> first()
+} else { "FALSE" }
+
+pp_psoe_rho <- if (!is.null(pp_psoe_corr_df)) {
+  round(pp_psoe_corr_df$pp_psoe_correlation[1], 2)
+} else { -0.60 }
+
+# June 2027 forecast values (dynamic from forecast_2027.csv)
+fc_jun27 <- forecast_df |> filter(year_month == as.Date("2027-06-01"))
+fc_neutral_jun27 <- fc_jun27 |> filter(scenario == "Neutral")
+fc_range_low  <- round(min(fc_jun27$psoe_forecast), 1)
+fc_range_high <- round(max(fc_jun27$psoe_forecast), 1)
+fc_neutral_pt <- round(fc_neutral_jun27$psoe_forecast, 1)
+
 # ── Refit OLS models for dynamic R² in table footnotes ───────────────────────
 model_data <- panel |>
   filter(!is.na(psoe_avg), !is.na(n_statements), !is.na(imm_volume_norm))
@@ -197,7 +249,7 @@ stopifnot(
       <div class="cover-stat-divider"></div>
       <div class="cover-stat"><span class="stat-num">11</span><span class="stat-label">Figures</span></div>
       <div class="cover-stat-divider"></div>
-      <div class="cover-stat"><span class="stat-num">22</span><span class="stat-label">Tables</span></div>
+      <div class="cover-stat"><span class="stat-num">27</span><span class="stat-label">Tables</span></div>
     </div>
   </div>
   <div class="cover-footer">
@@ -216,7 +268,7 @@ This report presents a reproducible data-harvesting and statistical analysis of 
 > 2. **Immigration media salience is negatively correlated with PSOE support** (r = −0.674): months with higher El País immigration coverage consistently coincide with lower PSOE polling ,consistent with issue-ownership theory (Petrocik, 1996).
 > 3. **Government immigration press releases do not predict PSOE polling**, at either contemporaneous or lead/lag levels. Granger causality tests (order = 2) confirm this for both immigration statements (F = 0.147, p = 0.864) and immigration media salience (F = 0.304, p = 0.741). La Moncloa's communication strategy is reactive, not strategic.
 > 4. **The January 2026 regularisation law** (targeting ~500,000 undocumented migrants) adds **zero direct new voters** to the 2027 General Election electorate due to Spanish citizenship requirements for national suffrage. Its electoral consequences are entirely through issue salience and partisan mobilization.
-> 5. **2027 PSOE forecast**: The ARIMA(0,1,0)-X model projects PSOE at **25.4–25.9%** by June 2027 across all three salience scenarios (95% CI: ±7 pp), with PP maintaining a 5–8 pp lead. The dominant predictor is time trend, not immigration salience.
+> 5. **2027 PSOE forecast**: The `r arima_order_label`-X model projects PSOE at **`r fc_range_low`–`r fc_range_high`%** by June 2027 across all three salience scenarios (95% CI: ±7 pp), with PP maintaining a 5–8 pp lead. The dominant predictor is time trend, not immigration salience.
 
 ---
 
@@ -795,8 +847,9 @@ ggplot(ccf_df, aes(x = lag, y = correlation)) +
   geom_hline(yintercept = 0, colour = COL_NEUTRAL, linewidth = 0.5) +
   geom_col(aes(fill = correlation > 0), width = 0.65, show.legend = FALSE) +
   geom_text(aes(label = sprintf("%.2f", correlation),
-                vjust = ifelse(correlation >= 0, -0.5, 1.4)),
-            size = 2.8, colour = "#444444") +
+                vjust = ifelse(correlation >= 0, -0.5, 1.4),
+                hjust = ifelse(lag %in% c(-1, 1), ifelse(lag == -1, 1.2, -0.2), 0.5)),
+            size = 2.6, colour = "#444444") +
   scale_fill_manual(values = c("FALSE" = "#BF4C52", "TRUE" = COL_POS)) +
   scale_x_continuous(breaks = ccf_df$lag) +
   annotate("text", x = 5.5, y = ci_bound + 0.05,
@@ -1022,6 +1075,9 @@ coef_plot_data <- model_coef |>
 
 ggplot(coef_plot_data,
        aes(x = Estimate, y = reorder(label, abs(Estimate)), colour = sig_level)) +
+  # Zero-effect shading: ±0.01 band around zero
+  annotate("rect", xmin = -0.01, xmax = 0.01, ymin = -Inf, ymax = Inf,
+           fill = COL_NEUTRAL, alpha = 0.15) +
   geom_vline(xintercept = 0, linetype = "dashed", colour = COL_NEUTRAL) +
   geom_linerange(aes(xmin = conf.low, xmax = conf.high),
                  linewidth = 1.1, alpha = 0.45) +
@@ -1060,20 +1116,112 @@ The OLS model treats each observation as independent; the ARIMA model explicitly
 
 ### Model Selection
 
-Using `forecast::auto.arima()` with AICc minimisation, the optimal model for the PSOE series with immigration salience as an external regressor is:
+Using `forecast::auto.arima()` with **exhaustive search** (`stepwise = FALSE, approximation = FALSE`) and AICc minimisation, the optimal model for the PSOE series with immigration salience as an external regressor is **`r arima_order_label`-X**. `r if (multi_xreg_used == "TRUE") "The model additionally includes government statement counts as a second external regressor (dynamic regression with multiple xreg), selected because it achieved a lower AICc than the salience-only specification." else "A two-regressor specification (salience + statements) was also tested but did not improve AICc over the single-regressor model."`
 
-$$\Delta \text{PSOE}_t = -0.014 \times \text{salience}_t + \varepsilon_t, \quad \varepsilon_t \sim \mathcal{N}(0,\; 0.89)$$
+```{r arima-spec-table, echo=FALSE}
+if (!is.null(diagnostics_df)) {
+  arima_row   <- diagnostics_df |> filter(test == "ARIMA order")
+  resid_row   <- diagnostics_df |> filter(test == "Residual SD (pp)")
+  lb_row      <- diagnostics_df |> filter(test == "Ljung-Box residuals")
+  best_row    <- diagnostics_df |> filter(test == "Best univariate (AICc)")
 
-This is an **ARIMA(0,1,0)-X** (integrated random walk with external regressor). The $d = 1$ integration order indicates PSOE polling behaves as a **random walk** at the monthly level ,the best predictor of next month's polls is this month's polls. The immigration salience coefficient (−0.014) is slightly smaller in magnitude than the OLS salience coefficient (−0.015), as the ARIMA formulation accounts for the drift already captured by differencing.
+  tribble(
+    ~`Model component`,              ~Value,
+    "ARIMA order",                   arima_row$result[1],
+    "External regressor(s)",         if (multi_xreg_used == "TRUE") "Salience + statements" else "Immigration media salience (0–100)",
+    "Multi-xreg selected",           multi_xreg_used,
+    "Best univariate by AICc",       best_row$result[1],
+    "Residual SD (pp)",              resid_row$result[1],
+    "Ljung-Box residual test",       lb_row$result[1]
+  ) |>
+    kbl(caption = paste0("Table 11b. ARIMA model specification (exhaustive search)")) |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+} else {
+  cat("*Run scripts/06_analysis_model.R to generate diagnostics.*")
+}
+```
 
-| Model component | Value |
-|----------------|-------|
-| ARIMA order | (0, 1, 0) |
-| External regressor | Immigration media salience (normalised 0–100) |
-| Salience coefficient | −0.014 (SE = 0.008) |
-| Residual variance σ² | 0.892 |
-| AIC | 76.51 |
-| AICc | 77.01 |
+## Alternative Models: ETS and VAR
+
+To validate the ARIMA-X forecast, we estimate two alternative models:
+
+### ETS (Exponential Smoothing State Space)
+
+ETS serves as a **univariate benchmark** — it cannot incorporate external regressors but provides a model-free comparison of forecast accuracy. The `ets()` function selects the optimal error, trend, and seasonality components via AICc.
+
+```{r ets-var-comparison, echo=FALSE}
+if (!is.null(diagnostics_df)) {
+  tribble(
+    ~Model,                                ~Specification,                                         ~`AICc basis`,
+    paste0(arima_order_label, "-X"),       if (multi_xreg_used == "TRUE") "Salience + statements xreg" else "Salience xreg only",  "Primary scenario model",
+    paste0("ETS (", best_univariate, ")"), "Univariate (no xreg possible)",                        "Benchmark",
+    "VAR(p)",                              paste0("PSOE + PP bivariate, lag = ", diagnostics_df |> filter(test == "VAR lag order") |> pull(result)),  "Coalition dynamics"
+  ) |>
+    kbl(caption = "Table 11c. Model comparison: ARIMA-X vs ETS vs VAR") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+}
+```
+
+### VAR (Vector Autoregression)
+
+The VAR model treats PSOE and PP as a **bivariate system**, capturing the dynamic interdependence between government and opposition polling. This is critical because Spanish polling is approximately zero-sum: when one major party gains, the other tends to lose.
+
+```{r var-forecast-table, echo=FALSE}
+if (!is.null(var_forecast)) {
+  var_jun27 <- var_forecast |> filter(year_month == as.Date("2027-06-01"))
+  if (nrow(var_jun27) > 0) {
+    tribble(
+      ~Party, ~`VAR point forecast (Jun 2027)`, ~`95% CI`,
+      "PSOE", paste0(round(var_jun27$psoe_var, 1), "%"),
+              paste0("[", round(var_jun27$psoe_var_lo, 1), ", ", round(var_jun27$psoe_var_hi, 1), "]"),
+      "PP",   paste0(round(var_jun27$pp_var, 1), "%"),
+              paste0("[", round(var_jun27$pp_var_lo, 1), ", ", round(var_jun27$pp_var_hi, 1), "]")
+    ) |>
+      kbl(caption = "Table 11d. VAR forecast at June 2027 (PSOE + PP jointly estimated)") |>
+      kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                    full_width = FALSE, font_size = 13) |>
+      row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+  }
+} else {
+  cat("*VAR forecast data not available — run scripts/06_analysis_model.R.*")
+}
+```
+
+> **Why the ARIMA-X remains primary:** Only the ARIMA-X model can incorporate immigration salience scenarios, making it the right tool for counterfactual analysis. The VAR and ETS serve as **cross-validation**: if all three models agree on the PSOE trajectory, our forecast is more credible.
+
+## Forecast Accuracy Assessment
+
+```{r forecast-accuracy-table, echo=FALSE}
+if (!is.null(forecast_accuracy)) {
+  forecast_accuracy |>
+    kbl(caption = "Table 11e. Forecast accuracy: rolling one-step-ahead evaluation (last 6 months held out) and in-sample residual metrics") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+} else {
+  cat("*Run scripts/06_analysis_model.R to generate forecast accuracy metrics.*")
+}
+```
+
+> The rolling one-step-ahead evaluation re-fits the model on an expanding window and predicts one month ahead. RMSE and MAE measure prediction error in percentage points. Lower values indicate better out-of-sample performance.
+
+## Stationarity and Diagnostics Summary
+
+```{r diagnostics-table, echo=FALSE}
+if (!is.null(diagnostics_df)) {
+  diagnostics_df |>
+    kbl(caption = "Table 11f. Statistical diagnostics summary") |>
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, font_size = 13) |>
+    row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT)
+} else {
+  cat("*Run scripts/06_analysis_model.R to generate diagnostics.*")
+}
+```
 
 ---
 
@@ -1154,35 +1302,36 @@ tribble(
 
 ## Model Specification
 
-We project PSOE voting intention using the ARIMA(0,1,0)-X model estimated over the 28-month historical series. The immigration salience regressor is specified as three scenarios reflecting different assumptions about how the regularisation debate evolves over the 16-month forecast horizon (March 2026 – June 2027).
+We project PSOE voting intention using the **`r arima_order_label`-X** model estimated over the 28-month historical series. The immigration salience regressor is specified as three **time-varying scenarios** reflecting different assumptions about how the regularisation debate evolves over the 16-month forecast horizon (March 2026 – June 2027). Rather than constant salience values, each scenario follows an exponential decay path: the debate peaks shortly after the regularisation announcement and decays at a scenario-specific rate.
 
-$$\Delta \widehat{\text{PSOE}}_t = -0.014 \times \text{salience}^{(s)}_t + \hat{\varepsilon}_t, \quad \hat{\varepsilon}_t \sim \mathcal{N}(0,\; 0.892)$$
-
-The 95% confidence interval grows with $\sqrt{h}$ where $h$ is the forecast horizon, reflecting cumulative uncertainty in the random-walk component.
+The 95% confidence interval grows with $\sqrt{h}$ where $h$ is the forecast horizon, reflecting cumulative uncertainty.
 
 ## Scenario Assumptions
 
 ```{r scenario-table, echo=FALSE}
 tribble(
-  ~Scenario,             ~`Assumed salience (norm. 0–100)`, ~`Rationale`,
-  "Neutral",         "70 (near 2024–25 average of 62 + modest elevation)", "Regularisation application process underway but no major border incidents; normal news cycle",
-  "High salience",   "90 (near historical maximum of 100)",                 "Sustained regularisation debate; Supreme Court ruling in 2026; summer Straits operations; PP election campaign focuses on immigration",
-  "Low salience",    "50 (below historical median of 63)",                  "Regularisation processed efficiently; economic news dominates; immigration fades from top-3 concerns"
+  ~Scenario,             ~`Salience path (peak → floor)`, ~`Half-life`, ~`Rationale`,
+  "Neutral",         "75 → 60", "8 months", "Regularisation application process underway but no major border incidents; gradual decay to slightly above historical average",
+  "High salience",   "95 → 70", "10 months", "Sustained regularisation debate; Supreme Court ruling in 2026; summer Straits operations; slow decay from near-maximum",
+  "Low salience",    "65 → 40", "4 months", "Regularisation processed efficiently; economic news dominates; rapid decay below historical median"
 ) |>
   kbl(
-    caption = "Table 15. Forecast scenario assumptions (March 2026 – June 2027)",
-    align   = c("l","c","l")
+    caption = "Table 15. Forecast scenario assumptions — time-varying exponential decay paths (March 2026 – June 2027)",
+    align   = c("l","c","c","l")
   ) |>
   kable_styling(bootstrap_options = c("striped","hover","condensed"),
                 full_width = TRUE, font_size = 13) |>
   row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
-  column_spec(1, bold = TRUE, width = "15%") |>
-  column_spec(2, bold = TRUE, width = "20%")
+  column_spec(1, bold = TRUE, width = "13%") |>
+  column_spec(2, bold = TRUE, width = "15%") |>
+  column_spec(3, width = "10%")
 ```
+
+> **Note:** Salience follows $\text{floor} + (\text{peak} - \text{floor}) \cdot e^{-\ln(2)/\tau \cdot t}$ where $\tau$ is the half-life in months. This is more realistic than constant salience values — policy debates decay in public attention over time (Petrocik, 1996).
 
 ## Forecast Results
 
-```{r plot-forecast, fig.height=6, fig.cap="Figure 9. PSOE voting intention forecast, March 2026 – June 2027, under three immigration salience scenarios. Historical data shown in red; dashed lines = scenario point forecasts from the ARIMA(0,1,0)-X model; grey ribbon = 80% and 95% forecast CI (Neutral scenario only). Interactive: hover for values, click legend entries to toggle scenarios."}
+```{r plot-forecast, fig.height=6, fig.cap=paste0("Figure 9. PSOE voting intention forecast, March 2026 – June 2027, under three immigration salience scenarios. Historical data shown in red; dashed lines = scenario point forecasts from the ", arima_order_label, "-X model; grey ribbon = 80% and 95% forecast CI (Neutral scenario only). Interactive: hover for values, click legend entries to toggle scenarios.")}
 
 hist_line <- polls |> select(year_month, psoe_avg) |> arrange(year_month)
 fc_neutral <- forecast_df |> filter(scenario == "Neutral") |> arrange(year_month)
@@ -1235,7 +1384,7 @@ plot_ly() |>
   ) |>
   layout(
     title = list(
-      text = "<b>PSOE Voting Intention Forecast ,Nov 2023 to Jun 2027</b><br><sup>ARIMA(0,1,0)-X · Three regularisation-impact scenarios · Hover for values · Toggle legend items</sup>",
+      text = paste0("<b>PSOE Voting Intention Forecast ,Nov 2023 to Jun 2027</b><br><sup>", arima_order_label, "-X · Three regularisation-impact scenarios · Hover for values · Toggle legend items</sup>"),
       font = list(size = 14, color = COL_ACCENT)
     ),
     xaxis = list(
@@ -1294,7 +1443,7 @@ forecast_df |>
 
 **Key forecast conclusions:**
 
-1. All three scenarios converge on **PSOE ~25.4–25.9%** by June 2027, reflecting the dominance of the linear time trend over the immigration salience effect.
+1. All three scenarios converge on **PSOE ~`r fc_range_low`–`r fc_range_high`%** by June 2027, reflecting the dominance of the linear time trend over the immigration salience effect.
 
 2. The **95% confidence interval spans ±7 pp** (18–33%), honestly reflecting the uncertainty of extrapolating a 28-month random walk process. Political forecasting inherently carries wide CIs.
 
@@ -1319,7 +1468,7 @@ Our model proceeds in four steps:
 1. **2023 Baseline**: Constituency-level vote shares calibrated from Ministerio del Interior results (23-J, 2023) ,validated against known national seat totals (PP 137, PSOE 121, Vox 33, Sumar 31, Regional 28).
 2. **Uniform swing**: For each 2027 scenario, the projected change in national vote shares is applied uniformly across all 52 constituencies, with regional party shares (PNV, EH Bildu, Junts, ERC, BNG, CC) held fixed ,their support is driven by regional, not immigration-salience, dynamics.
 3. **D'Hondt**: Applied independently to each of the 52 constituencies under the adjusted vote shares.
-4. **Monte Carlo**: 5,000 draws sample PSOE vote share from the ARIMA forecast distribution ($\sigma$ derived from the 80% CI width); PP adjusts proportionally (anti-correlated, $\rho \approx -0.6$); Vox and Sumar receive independent noise ($\sigma = 0.8$ pp).
+4. **Monte Carlo**: 5,000 draws sample PSOE vote share from the ARIMA forecast distribution ($\sigma$ derived from the ARIMA 95% prediction SE at June 2027); PP adjusts proportionally (anti-correlated, $\rho =$ `r pp_psoe_rho`, estimated from observed PSOE–PP monthly correlation); Vox and Sumar receive independent noise ($\sigma$ scaled as 70% of the PSOE prediction SE). All Monte Carlo parameters are **data-driven** from the ARIMA forecast output, not hardcoded.
 
 ## 2023 Model Validation
 
@@ -1337,7 +1486,7 @@ if (!is.null(seat_proj)) {
     row_spec(0, bold = TRUE, color = "white", background = COL_ACCENT) |>
     row_spec(6, bold = TRUE, background = "#f8f9fa") |>
     column_spec(4, color = ifelse(c(+2,-2,+1,-5,+4,0) > 0, "#2E7D32",
-                                  ifelse(c(+2,-2,+1,-5,+4,0) < 0, "#E63946", "black")))
+                                  ifelse(c(+2,-2,+1,-5,+4,0) < 0, COL_PSOE, "black")))
 } else {
   cat("*Run scripts/07_dhondt_projection.R to generate seat projections.*")
 }
@@ -1641,7 +1790,7 @@ tribble(
   "Pre-event trend (pp/month)",    "−0.49",                    "−0.138",
   "Immediate poll shock",          "−1.1 pp (not significant)", "TBD ,application open 2026",
   "PP counter-campaign",           "Rajoy vs. regularisation",  "Feijóo vs. ILP",
-  "Election outcome",              "PSOE won 2008: 43.9%",     "PSOE projected: ~25.7% (2027)",
+  "Election outcome",              "PSOE won 2008: 43.9%",     paste0("PSOE projected: ~", fc_neutral_pt, "% (2027)"),
   "ITS post-slope",                "+0.49 pp/month (recovery)", "To be determined",
   "Key difference",                "Starting from 42%, decline had room to recover", "Starting from 29%, far less buffer"
 ) |>
@@ -1652,7 +1801,7 @@ tribble(
   column_spec(1, bold = TRUE, width = "30%")
 ```
 
-> **The critical difference**: Zapatero entered the 2005 regularisation at 42% ,enough buffer to absorb a temporary decline and recover to 43.9% in 2008. Sánchez enters 2026 at approximately 29%, with the structural decline leaving him at a projected ~25.7% by June 2027 regardless of regularisation scenario. **The historical precedent is encouraging for the policy but does not offset the structural mid-term decline (−0.138 pp/month) documented in this analysis.**
+> **The critical difference**: Zapatero entered the 2005 regularisation at 42% ,enough buffer to absorb a temporary decline and recover to 43.9% in 2008. Sánchez enters 2026 at approximately 29%, with the structural decline leaving him at a projected ~`r fc_neutral_pt`% by June 2027 regardless of regularisation scenario. **The historical precedent is encouraging for the policy but does not offset the structural mid-term decline (−0.138 pp/month) documented in this analysis.**
 
 ---
 
@@ -1696,7 +1845,7 @@ This study provides the first systematic quantitative analysis linking Spanish g
 
 4. **The 2026 regularisation is a polarizing political signal, not an electoral mobilization tool.** Zero of the ~500,000 newly regularised migrants can vote in the 2027 General Election. Its electoral impact ,sustained immigration salience, base mobilization on the left, attack vectors on the right ,is captured in the High Salience scenario, which adds only ~0.3 pp of additional PSOE decline relative to neutral.
 
-5. **PSOE is forecast at ~25.5% for June 2027**, with PP maintaining a 5–8 pp lead. Spain's fragmented party system means this does not directly determine the government; coalition arithmetic will be decisive.
+5. **PSOE is forecast at ~`r fc_neutral_pt`% for June 2027**, with PP maintaining a 5–8 pp lead. Spain's fragmented party system means this does not directly determine the government; coalition arithmetic will be decisive.
 
 **Methodological contributions:**
 
@@ -1740,6 +1889,11 @@ tribble(
   "`data/processed/forecast_2027.csv`",   "48",    "PSOE forecast to June 2027 ,3 scenarios × 16 months",
   "`data/processed/seat_projections.csv`","3",    "D'Hondt seat projections ,3 scenarios (script 07)",
   "`data/processed/seat_monte_carlo.csv`","15000","Monte Carlo seat draws ,5,000 per scenario (script 07)",
+  "`data/processed/var_forecast_2027.csv`","16",  "VAR bivariate (PSOE+PP) forecast to June 2027",
+  "`data/processed/arima_prediction_se.csv`","16","ARIMA prediction SEs (derived from 95% CI)",
+  "`data/processed/pp_psoe_correlation.csv`","1", "Empirical PP-PSOE polling correlation",
+  "`data/processed/forecast_accuracy.csv`","4",   "Rolling one-step-ahead accuracy metrics (ARIMA vs ETS)",
+  "`data/processed/diagnostics_summary.csv`","9", "Statistical diagnostics summary (ADF, PP, Ljung-Box, etc.)",
   "`data/processed/historical_polls_2004_2008.csv`","48","Monthly PSOE/PP polls 2004–2008 (script 08)",
   "`data/processed/its_results.csv`",    "4",     "ITS regression coefficients ,2005 regularisation effect (script 08)"
 ) |>

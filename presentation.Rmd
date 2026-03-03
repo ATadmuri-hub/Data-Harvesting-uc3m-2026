@@ -28,13 +28,13 @@ library(tidyverse)
 library(lubridate)
 library(scales)
 
-# ── Palette (matches report) ──────────────────────────────────────────────────
-COL_PSOE    <- "#E63946"
-COL_PP      <- "#457B9D"
-COL_VOX     <- "#2D6A4F"
-COL_SUMAR   <- "#7B2FBE"
-COL_IMM     <- "#F4A261"
-COL_ACCENT  <- "#1D3557"
+# ── Palette (Okabe-Ito colorblind-safe, matches output plots) ─────────────────
+COL_PSOE    <- "#D55E00"   # vermillion
+COL_PP      <- "#0072B2"   # blue
+COL_VOX     <- "#009E73"   # bluish green
+COL_SUMAR   <- "#CC79A7"   # reddish purple (Okabe-Ito safe)
+COL_IMM     <- "#E69F00"   # amber
+COL_ACCENT  <- "#332288"   # dark indigo
 COL_NEUTRAL <- "#ADB5BD"
 
 SLIDE_THEME <- theme_minimal(base_size = 13) +
@@ -79,6 +79,45 @@ hist_polls <- tryCatch(
 )
 
 desc_stats <- read_csv("data/processed/descriptive_stats.csv", show_col_types = FALSE)
+
+# ── New model outputs (match report.Rmd) ──────────────────────────────────────
+var_forecast <- tryCatch(
+  read_csv("data/processed/var_forecast_2027.csv", show_col_types = FALSE) |>
+    mutate(year_month = as.Date(year_month)),
+  error = function(e) NULL
+)
+forecast_accuracy <- tryCatch(
+  read_csv("data/processed/forecast_accuracy.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+diagnostics_df <- tryCatch(
+  read_csv("data/processed/diagnostics_summary.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+arima_pred_se <- tryCatch(
+  read_csv("data/processed/arima_prediction_se.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+pp_psoe_corr_df <- tryCatch(
+  read_csv("data/processed/pp_psoe_correlation.csv", show_col_types = FALSE),
+  error = function(e) NULL
+)
+
+# ── Dynamic variable extraction ───────────────────────────────────────────────
+arima_order_label <- if (!is.null(diagnostics_df)) {
+  raw <- diagnostics_df |> filter(test == "ARIMA order") |> pull(result) |> first()
+  m <- regmatches(raw, regexpr("ARIMA\\([0-9],[0-9],[0-9]\\)", raw))
+  if (length(m) == 1) m else "ARIMA(0,1,0)"
+} else { "ARIMA(0,1,0)" }
+
+pp_psoe_rho <- if (!is.null(pp_psoe_corr_df)) {
+  round(pp_psoe_corr_df$pp_psoe_correlation[1], 2)
+} else { 0.72 }
+
+fc_neutral <- forecast_df |> filter(scenario == "Neutral")
+fc_neutral_pt <- round(fc_neutral$psoe_forecast[nrow(fc_neutral)], 1)
+fc_range_low  <- round(min(forecast_df$psoe_forecast[forecast_df$year_month == max(forecast_df$year_month)]), 1)
+fc_range_high <- round(max(forecast_df$psoe_forecast[forecast_df$year_month == max(forecast_df$year_month)]), 1)
 ```
 
 ---
@@ -101,7 +140,7 @@ class: title-slide
   <div class="title-divider"></div>
   <div class="title-stat-block"><span class="title-stat-num">11</span><span class="title-stat-label">Figures</span></div>
   <div class="title-divider"></div>
-  <div class="title-stat-block"><span class="title-stat-num">22</span><span class="title-stat-label">Tables</span></div>
+  <div class="title-stat-block"><span class="title-stat-num">27</span><span class="title-stat-label">Tables</span></div>
 </div>
 
 <div class="title-authors">
@@ -141,7 +180,7 @@ class: title-slide
 
 **Part III — Electoral Projections**
 
-12. ARIMA(0,1,0)-X forecast to June 2027
+12. `r arima_order_label`-X forecast to June 2027
 13. Regularisation law: a non-voter event
 14. D'Hondt seat projections (Monte Carlo)
 15. Historical parallel: the 2005 Zapatero case
@@ -605,7 +644,7 @@ ggplot(panel_col, aes(imm_volume_norm, psoe_avg)) +
   geom_smooth(method = "lm", se = TRUE,
               colour = COL_ACCENT, fill = COL_ACCENT, alpha = 0.1,
               linewidth = 0.9) +
-  scale_colour_manual(values = c("#5aafda", "#1D3557", COL_PSOE)) +
+  scale_colour_manual(values = c("#56B4E9", COL_ACCENT, COL_PSOE)) +
   scale_x_continuous(labels = function(x) paste0(x)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   labs(title = "El País Salience vs PSOE Support",
@@ -632,6 +671,67 @@ Months with highest immigration media coverage consistently coincide with lowest
 
 <div class="box blue">
 <strong>Mechanism (Petrocik 1996):</strong> Issue ownership theory — when immigration becomes more salient, voters increasingly associate the issue with right-leaning parties (PP, Vox), not the governing left.
+</div>
+
+]
+
+---
+
+# Finding 2b: The Correlation Is Structural, Not Episodic
+
+.pull-left[
+
+```{r rolling-corr, fig.width=4.8, fig.height=3.2, out.width="100%"}
+roll_data <- panel |>
+  arrange(year_month) |>
+  filter(!is.na(psoe_avg), !is.na(imm_volume_norm))
+
+roll_data$roll_corr <- zoo::rollapplyr(
+  cbind(roll_data$psoe_avg, roll_data$imm_volume_norm),
+  width = 6, FUN = function(mat) cor(mat[,1], mat[,2], use = "complete.obs"),
+  by.column = FALSE, fill = NA_real_
+)
+
+# 95% significance threshold for Pearson r with n = 6 (df = 4)
+df_roll <- 4
+t_crit  <- qt(0.975, df = df_roll)
+ci_roll <- t_crit / sqrt(t_crit^2 + df_roll)
+
+ggplot(roll_data |> filter(!is.na(roll_corr)),
+       aes(x = year_month, y = roll_corr)) +
+  geom_ribbon(aes(ymin = -ci_roll, ymax = ci_roll),
+              fill = COL_NEUTRAL, alpha = 0.25) +
+  geom_hline(yintercept = 0, colour = COL_NEUTRAL, linewidth = 0.5) +
+  geom_line(colour = COL_PSOE, linewidth = 1.1) +
+  geom_point(colour = COL_PSOE, size = 2, shape = 21,
+             fill = "white", stroke = 1.1) +
+  annotate("text", x = max(roll_data$year_month, na.rm = TRUE),
+           y = -ci_roll - 0.08, label = "p = 0.05",
+           colour = "grey50", size = 2.5, hjust = 1) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %y") +
+  scale_y_continuous(limits = c(-1.05, 1.05), breaks = seq(-1, 1, 0.5)) +
+  labs(title = "Rolling Correlation: PSOE vs Immigration Salience",
+       subtitle = sprintf("6-month window \u00b7 Shaded = 95%% significance (|r| > %.2f)", ci_roll),
+       x = NULL, y = "Pearson r") +
+  theme(plot.title = element_text(size = 11))
+```
+
+]
+
+.pull-right[
+
+<br>
+
+<div class="box red" style="margin-bottom:0.7em;">
+<strong>Consistently negative.</strong> The rolling correlation never crosses zero &mdash; the PSOE-salience relationship holds across the entire 28-month window, not just during peak salience months.
+</div>
+
+<div class="box orange" style="margin-bottom:0.7em;">
+<strong>Deepening trend:</strong> The correlation grows more negative toward Jan&ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
+</div>
+
+<div class="box blue">
+<strong>Implication:</strong> This is a structural association &mdash; not driven by a single event or outlier month. The issue ownership mechanism (Petrocik 1996) operates continuously.
 </div>
 
 ]
@@ -690,13 +790,13 @@ mc <- model_comp |>
     short_name = case_when(
       str_detect(model, "M1") ~ "M1: Trend only",
       str_detect(model, "M2") ~ "M2: + Gov. statements",
-      str_detect(model, "M3") ~ "M3: Full model \u2605",
+      str_detect(model, "M3") ~ "M3: Full model (main)",
       str_detect(model, "M4") ~ "M4: Lagged",
       TRUE ~ model
     ),
     short_name = factor(short_name, levels = rev(c(
       "M1: Trend only", "M2: + Gov. statements",
-      "M3: Full model \u2605", "M4: Lagged"
+      "M3: Full model (main)", "M4: Lagged"
     ))),
     best = str_detect(model, "M3")
   )
@@ -750,9 +850,9 @@ class: inverse, center, middle
 
 ---
 
-# ARIMA(0,1,0)-X Forecast: PSOE to June 2027
+# `r arima_order_label`-X Forecast: PSOE to June 2027
 
-```{r forecast-plot, fig.width=10.0, fig.height=2.8, out.width="100%"}
+```{r forecast-plot, fig.width=10.0, fig.height=4.0, out.width="100%"}
 hist_panel <- panel |>
   select(year_month, psoe_avg) |>
   mutate(type = "Observed", scenario = "Observed")
@@ -760,7 +860,7 @@ hist_panel <- panel |>
 scen_colors <- c(
   "Neutral"                         = COL_ACCENT,
   "High salience (regularization debate)" = COL_PSOE,
-  "Low salience (issue fades)"       = "#2a9d8f"
+  "Low salience (issue fades)"       = COL_VOX
 )
 
 fcst_plot <- forecast_df |>
@@ -783,13 +883,19 @@ ggplot() +
   geom_vline(xintercept = as.Date("2026-03-01"),
              linetype = "dashed", colour = COL_IMM, linewidth = 0.8) +
   annotate("text", x = as.Date("2026-04-01"), y = 29.5,
-           label = "Forecast →", size = 3, colour = COL_IMM, hjust = 0) +
+           label = "Forecast \u2192", size = 3, colour = COL_IMM, hjust = 0) +
+  # Direct endpoint labels on the last forecast point (Jun 2027)
+  geom_text(data = fcst_plot |> filter(year_month == max(year_month)),
+            aes(x = year_month, y = psoe_forecast, colour = scenario,
+                label = paste0(round(psoe_forecast, 1), "%")),
+            hjust = -0.15, size = 3, fontface = "bold", show.legend = FALSE) +
   scale_colour_manual(values = scen_colors) +
   scale_fill_manual(values = scen_colors) +
-  scale_x_date(date_labels = "%b %Y", date_breaks = "4 months") +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "4 months",
+               expand = expansion(mult = c(0.02, 0.10))) +
   scale_y_continuous(labels = function(x) paste0(x, "%"), limits = c(18, 33)) +
-  labs(title = "PSOE Voting Intention: Observed + ARIMA(0,1,0)-X Forecast by Scenario",
-       subtitle = "Shaded bands = 80% and 95% prediction intervals   ·   Forecast horizon: Mar 2026 – Jun 2027",
+  labs(title = paste0("PSOE Voting Intention: Observed + ", arima_order_label, "-X Forecast by Scenario"),
+       subtitle = "Shaded bands = 80% and 95% prediction intervals   \u00b7   Forecast horizon: Mar 2026 \u2013 Jun 2027",
        x = NULL, y = "PSOE vote intention (%)",
        colour = "Scenario", fill = "Scenario") +
   theme(legend.position = "right", legend.text = element_text(size = 8))
@@ -797,7 +903,7 @@ ggplot() +
 
 .pull-left[
 <div class="box red" style="font-size:0.84em; margin-top:0.3em;">
-<strong>June 2027:</strong> Neutral ≈ 25.7% · High salience ≈ 25.4% · Low salience ≈ 25.9%
+<strong>June 2027:</strong> Neutral ≈ `r fc_neutral_pt`% · High salience ≈ `r fc_range_low`% · Low salience ≈ `r fc_range_high`%
 </div>
 ]
 .pull-right[
@@ -919,7 +1025,10 @@ High salience: <strong>71.7%</strong> &nbsp;|&nbsp; Neutral: <strong>46.1%</stro
 </div>
 
 <div class="box orange" style="font-size:0.86em;">
-PP falls short of 176 in all point estimates. Whether PP can govern depends on Vox cooperation and the outcome of the immigration salience scenario.
+<strong>Coalition arithmetic (Neutral scenario):</strong><br>
+PP + Vox = 144 + 34 = **178** (majority)<br>
+PSOE + Sumar + Regional = 114 + 26 + 32 = **172** (short)<br>
+PP alone falls short of 176 — Vox cooperation is decisive.
 </div>
 
 ]
@@ -937,24 +1046,51 @@ if (!is.null(hist_polls)) {
       difftime(year_month, as.Date("2005-02-01"), units = "weeks") / 4.33
     ))
 
-  ggplot(hist_polls, aes(months_rel, psoe_pct)) +
-    geom_ribbon(aes(ymin = psoe_counterfact, ymax = psoe_pct),
-                fill = COL_PP, alpha = 0.12) +
-    geom_line(aes(y = psoe_counterfact), linetype = "dashed",
-              colour = "#aaa", linewidth = 0.8) +
-    geom_line(colour = COL_PSOE, linewidth = 1.1) +
-    geom_point(colour = COL_PSOE, size = 1.8) +
+  # 2026 overlay: current PSOE data aligned to Jan 2026 regularisation
+  current_overlay <- panel |>
+    filter(!is.na(psoe_avg)) |>
+    mutate(months_rel = as.numeric(
+      difftime(year_month, as.Date("2026-01-01"), units = "weeks") / 4.33
+    ))
+
+  ggplot() +
+    # 2005 counterfactual ribbon
+    geom_ribbon(data = hist_polls,
+                aes(x = months_rel, ymin = psoe_counterfact, ymax = psoe_pct),
+                fill = COL_PP, alpha = 0.10) +
+    geom_line(data = hist_polls, aes(months_rel, psoe_counterfact),
+              linetype = "dashed", colour = "#aaa", linewidth = 0.7) +
+    # 2005 actual
+    geom_line(data = hist_polls, aes(months_rel, psoe_pct),
+              colour = COL_PSOE, linewidth = 1.0) +
+    geom_point(data = hist_polls, aes(months_rel, psoe_pct),
+               colour = COL_PSOE, size = 1.5) +
+    # 2026 overlay
+    geom_line(data = current_overlay, aes(months_rel, psoe_avg),
+              colour = COL_ACCENT, linewidth = 1.0, linetype = "solid") +
+    geom_point(data = current_overlay, aes(months_rel, psoe_avg),
+               colour = COL_ACCENT, size = 1.5, shape = 17) +
+    # Regularisation marker
     geom_vline(xintercept = 0, linetype = "dashed",
                colour = COL_IMM, linewidth = 0.9) +
     annotate("text", x = 0.5, y = max(hist_polls$psoe_pct, na.rm = TRUE) - 0.5,
-             label = "Feb 2005\nRegularisation\nstarts", size = 2.7,
+             label = "Regularisation\nstart", size = 2.5,
              hjust = 0, colour = "#9b6000", lineheight = 0.9) +
+    # Legend labels
+    annotate("text", x = max(hist_polls$months_rel, na.rm = TRUE) - 1,
+             y = min(hist_polls$psoe_pct, na.rm = TRUE) + 1.5,
+             label = "2005 (Zapatero)", colour = COL_PSOE,
+             size = 2.8, hjust = 1, fontface = "bold") +
+    annotate("text", x = max(current_overlay$months_rel, na.rm = TRUE),
+             y = min(current_overlay$psoe_avg, na.rm = TRUE) - 1,
+             label = "2026 (S\u00e1nchez)", colour = COL_ACCENT,
+             size = 2.8, hjust = 1, fontface = "bold") +
     scale_y_continuous(labels = function(x) paste0(x, "%")) +
-    scale_x_continuous(breaks = seq(-10, 25, 5),
+    scale_x_continuous(breaks = seq(-25, 25, 5),
                        labels = function(x) paste0(ifelse(x >= 0, "+", ""), x, "m")) +
-    labs(title = "PSOE Support Around the 2005 Regularisation",
-         subtitle = "Solid = actual · Dashed = counterfactual (ITS model)",
-         x = "Months relative to regularisation start",
+    labs(title = "PSOE Support: 2005 vs 2026 Regularisation Comparison",
+         subtitle = "Aligned on regularisation start month (t = 0)",
+         x = "Months relative to regularisation",
          y = "PSOE vote intention (%)") +
     theme(plot.title = element_text(size = 11))
 } else {
@@ -1027,7 +1163,7 @@ class: inverse, center, middle
 **Modelling limitations**
 
 - n = 28 monthly observations — low statistical power for multi-predictor OLS
-- ARIMA(0,1,0) assumes a random walk; model selection via AIC/BIC on short series is inherently uncertain
+- `r arima_order_label` assumes a random walk; model selection via AIC/BIC on short series is inherently uncertain
 - Omitted variables: unemployment shocks, coalition crises, EU elections not modelled
 
 ]

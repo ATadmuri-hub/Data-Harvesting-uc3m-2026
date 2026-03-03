@@ -35,7 +35,7 @@ class: title-slide
   &lt;div class="title-divider"&gt;&lt;/div&gt;
   &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;11&lt;/span&gt;&lt;span class="title-stat-label"&gt;Figures&lt;/span&gt;&lt;/div&gt;
   &lt;div class="title-divider"&gt;&lt;/div&gt;
-  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;22&lt;/span&gt;&lt;span class="title-stat-label"&gt;Tables&lt;/span&gt;&lt;/div&gt;
+  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;27&lt;/span&gt;&lt;span class="title-stat-label"&gt;Tables&lt;/span&gt;&lt;/div&gt;
 &lt;/div&gt;
 
 &lt;div class="title-authors"&gt;
@@ -412,7 +412,7 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
 
 .pull-left[
 
-&lt;table class="table" style="font-size: 12px; color: black; margin-left: auto; margin-right: auto;"&gt;
+&lt;table class="table" style="font-size: 12px; margin-left: auto; margin-right: auto;"&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(29, 53, 87, 255) !important;"&gt; Variable &lt;/th&gt;
@@ -478,6 +478,15 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
    &lt;td style="text-align:right;"&gt; 51.00 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 132.00 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 208.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; National unemployment rate (%) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 26 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11.59 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.58 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11.00 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12.00 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12.67 &lt;/td&gt;
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
@@ -556,6 +565,34 @@ Months with highest immigration media coverage consistently coincide with lowest
 
 &lt;div class="box blue"&gt;
 &lt;strong&gt;Mechanism (Petrocik 1996):&lt;/strong&gt; Issue ownership theory — when immigration becomes more salient, voters increasingly associate the issue with right-leaning parties (PP, Vox), not the governing left.
+&lt;/div&gt;
+
+]
+
+---
+
+# Finding 2b: The Correlation Is Structural, Not Episodic
+
+.pull-left[
+
+&lt;img src="presentation_files/figure-html/rolling-corr-1.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+&lt;br&gt;
+
+&lt;div class="box red" style="margin-bottom:0.7em;"&gt;
+&lt;strong&gt;Consistently negative.&lt;/strong&gt; The rolling correlation never crosses zero &amp;mdash; the PSOE-salience relationship holds across the entire 28-month window, not just during peak salience months.
+&lt;/div&gt;
+
+&lt;div class="box orange" style="margin-bottom:0.7em;"&gt;
+&lt;strong&gt;Deepening trend:&lt;/strong&gt; The correlation grows more negative toward Jan&amp;ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
+&lt;/div&gt;
+
+&lt;div class="box blue"&gt;
+&lt;strong&gt;Implication:&lt;/strong&gt; This is a structural association &amp;mdash; not driven by a single event or outlier month. The issue ownership mechanism (Petrocik 1996) operates continuously.
 &lt;/div&gt;
 
 ]
@@ -649,7 +686,7 @@ class: inverse, center, middle
 
 .pull-left[
 &lt;div class="box red" style="font-size:0.84em; margin-top:0.3em;"&gt;
-&lt;strong&gt;June 2027:&lt;/strong&gt; Neutral ≈ 25.7% · High salience ≈ 25.4% · Low salience ≈ 25.9%
+&lt;strong&gt;June 2027:&lt;/strong&gt; Neutral ≈ 25.7% · High salience ≈ 25.5% · Low salience ≈ 26.1%
 &lt;/div&gt;
 ]
 .pull-right[
@@ -732,7 +769,10 @@ High salience: &lt;strong&gt;71.7%&lt;/strong&gt; &amp;nbsp;|&amp;nbsp; Neutral:
 &lt;/div&gt;
 
 &lt;div class="box orange" style="font-size:0.86em;"&gt;
-PP falls short of 176 in all point estimates. Whether PP can govern depends on Vox cooperation and the outcome of the immigration salience scenario.
+&lt;strong&gt;Coalition arithmetic (Neutral scenario):&lt;/strong&gt;&lt;br&gt;
+PP + Vox = 144 + 34 = **178** (majority)&lt;br&gt;
+PSOE + Sumar + Regional = 114 + 26 + 32 = **172** (short)&lt;br&gt;
+PP alone falls short of 176 — Vox cooperation is decisive.
 &lt;/div&gt;
 
 ]

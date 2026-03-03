@@ -20,7 +20,7 @@ required_packages <- c(
   "tidyverse", "lubridate", "stringr",
   "sf", "ggplot2", "patchwork", "scales", "robotstxt",
   "broom", "lmtest", "sandwich", "forecast", "zoo",
-  "plotly"
+  "plotly", "kableExtra", "ggcorrplot", "rmarkdown"
 )
 
 missing <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
@@ -30,25 +30,25 @@ if (length(missing) > 0) {
 }
 
 # --- 1. Scrape La Moncloa press releases --------------------------------------
-cat("[1/5] Scraping La Moncloa press releases...\n")
+cat("[1/8] Scraping La Moncloa press releases...\n")
 source("scripts/01_scrape_lamoncloa.R")
 cat("    -> Saved: data/raw/lamoncloa_raw.csv\n")
 cat("    -> Saved: data/processed/immigration_statements.csv\n")
 cat("    -> Saved: data/processed/monthly_statements.csv\n\n")
 
 # --- 2. Scrape opinion polls from Wikipedia -----------------------------------
-cat("[2/5] Scraping Spanish opinion polls from Wikipedia...\n")
+cat("[2/8] Scraping Spanish opinion polls from Wikipedia...\n")
 source("scripts/02_scrape_polls.R")
 cat("    -> Saved: data/raw/polls_raw.csv\n")
 cat("    -> Saved: data/processed/monthly_polls.csv\n\n")
 
 # --- 3. Fetch INE demographic data via API ------------------------------------
-cat("[3/5] Fetching INE demographic data (API)...\n")
+cat("[3/8] Fetching INE demographic data (API)...\n")
 source("scripts/03_ine_demographics.R")
 cat("    -> Saved: data/raw/ine_demographics_raw.csv\n\n")
 
 # --- 4. Scrape El País for media salience -------------------------------------
-cat("[4/5] Scraping El País for immigration media salience...\n")
+cat("[4/8] Scraping El País for immigration media salience...\n")
 source("scripts/04_media_salience.R")
 cat("    -> Saved: data/raw/elpais_headlines_raw.csv\n")
 cat("    -> Saved: data/processed/salience_scores.csv\n\n")
@@ -68,7 +68,12 @@ cat("    -> Saved: data/processed/descriptive_stats.csv\n")
 cat("    -> Saved: data/processed/correlation_matrix.csv\n")
 cat("    -> Saved: data/processed/crosscorr_statements_psoe.csv\n")
 cat("    -> Saved: data/processed/model_results.csv\n")
-cat("    -> Saved: data/processed/forecast_2027.csv\n\n")
+cat("    -> Saved: data/processed/forecast_2027.csv\n")
+cat("    -> Saved: data/processed/var_forecast_2027.csv\n")
+cat("    -> Saved: data/processed/arima_prediction_se.csv\n")
+cat("    -> Saved: data/processed/pp_psoe_correlation.csv\n")
+cat("    -> Saved: data/processed/forecast_accuracy.csv\n")
+cat("    -> Saved: data/processed/diagnostics_summary.csv\n\n")
 
 # --- 7. D'Hondt seat projection model -----------------------------------------
 cat("[7/8] Running D'Hondt seat projection model (Monte Carlo n=5000)...\n")

@@ -1,4 +1,4 @@
 scenario,PP_median,PP_lo80,PP_hi80,PP_lo95,PP_hi95,PSOE_median,PSOE_lo80,PSOE_hi80,PSOE_lo95,PSOE_hi95,Vox_median,Vox_lo80,Vox_hi80,Vox_lo95,Vox_hi95,Sumar_median,Sumar_lo80,Sumar_hi80,Sumar_lo95,Sumar_hi95,Regional_median,Regional_lo80,Regional_hi80,Regional_lo95,Regional_hi95,PP_majority,PSOE_majority
-High salience (regularization debate),145,142,146,140,149,113,112,116,109,119,34,34,34,34,35,26,25,27,25,28,32,32,32,32,32,0.7172,0
-Low salience (issue fades),142,139,145,138,145,115,112,119,112,120,34,34,34,34,34,27,26,28,25,28,32,32,32,32,32,0.2132,0
-Neutral,143,140,146,139,146,114,112,118,112,119,34,34,34,34,34,27,25,28,25,28,32,32,32,32,32,0.4612,0
+High salience (regularization debate),138,133,143,131,146,118,112,121,109,122,34,34,40,32,42,27,24,32,23,33,32,30,32,30,32,0.0778,0
+Low salience (issue fades),138,134,143,132,145,119,113,121,109,122,34,33,38,30,41,28,25,32,23,33,32,30,32,30,32,0.051,0
+Neutral,138,134,143,132,145,118,112,121,109,122,34,33,39,31,41,27,25,32,23,33,32,30,32,30,32,0.0658,0

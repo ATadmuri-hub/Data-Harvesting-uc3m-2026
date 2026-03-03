@@ -74,10 +74,11 @@ theme_project <- function() {
     )
 }
 
-PSOE_COLOR  <- "#E63946"
-PP_COLOR    <- "#457B9D"
-VOX_COLOR   <- "#2D6A4F"
-ACCENT      <- "#F4A261"
+# Okabe-Ito colorblind-safe palette (distinguishable under protanopia/deuteranopia)
+PSOE_COLOR  <- "#D55E00"   # vermillion (warm red-orange)
+PP_COLOR    <- "#0072B2"   # blue
+VOX_COLOR   <- "#009E73"   # bluish green
+ACCENT      <- "#E69F00"   # amber
 
 # ==============================================================================
 # PLOT 1: Speech vs Polls Timeline
@@ -127,6 +128,10 @@ if (nrow(polls) > 0 && "year_month" %in% colnames(polls)) {
     geom_line(aes(y = pp_avg,   colour = "PP"),   linewidth = 0.8, linetype = "dashed",
               na.rm = TRUE) +
 
+    # Vox line
+    geom_line(aes(y = vox_avg,  colour = "Vox"),  linewidth = 0.8, linetype = "dashed",
+              na.rm = TRUE) +
+
     # PSOE main line
     geom_line(aes(y = psoe_avg, colour = "PSOE"), linewidth = 1.3, na.rm = TRUE) +
     geom_point(aes(y = psoe_avg, size = n_speeches, colour = "PSOE"),
@@ -144,12 +149,12 @@ if (nrow(polls) > 0 && "year_month" %in% colnames(polls)) {
     } +
 
     scale_colour_manual(
-      values  = c("PSOE" = PSOE_COLOR, "PP" = PP_COLOR),
+      values  = c("PSOE" = PSOE_COLOR, "PP" = PP_COLOR, "Vox" = VOX_COLOR),
       name    = "Party"
     ) +
     scale_size_continuous(name = "Immigration speeches", range = c(1.5, 5)) +
     scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
-    scale_y_continuous(labels = label_percent(scale = 1), limits = c(15, 45)) +
+    scale_y_continuous(labels = label_percent(scale = 1), limits = c(5, 45)) +
     labs(
       title    = "PSOE Polling Intention vs. Official Immigration Statements",
       subtitle = paste0(
@@ -164,7 +169,7 @@ if (nrow(polls) > 0 && "year_month" %in% colnames(polls)) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   ggsave("output/plots/01_speech_vs_polls_timeline.png",
-         p1, width = 14, height = 7, dpi = 150)
+         p1, width = 14, height = 7, dpi = 300)
   cat("    Saved: output/plots/01_speech_vs_polls_timeline.png\n")
 
 } else {
@@ -178,7 +183,7 @@ if (nrow(polls) > 0 && "year_month" %in% colnames(polls)) {
     labs(title = "Speech vs Polls Timeline") +
     theme_void()
   ggsave("output/plots/01_speech_vs_polls_timeline.png",
-         p1, width = 12, height = 6, dpi = 150)
+         p1, width = 12, height = 6, dpi = 300)
 }
 
 # ==============================================================================
@@ -247,13 +252,16 @@ if (nrow(demographics) > 0 && !"note" %in% colnames(demographics)) {
       )
 
     ggsave("output/plots/02_reaction_map.png",
-           p2, width = 10, height = 9, dpi = 150)
+           p2, width = 10, height = 9, dpi = 300)
     cat("    Saved: output/plots/02_reaction_map.png\n")
 
   } else {
-    cat("    INFO: rnaturalearth not installed — creating bar chart fallback\n")
+    cat("    INFO: rnaturalearth not installed — creating provincial chart fallback\n")
 
-    # Use unemployment data as fallback (we have it by province)
+    # Border/immigration-relevant provinces for highlighting
+    border_provs <- c("Ceuta", "Melilla", "Las Palmas", "Santa Cruz de Tenerife",
+                       "Cádiz", "Almería", "Málaga", "Huelva")
+
     top_provinces <- demographics |>
       filter(indicator == "unemployment_rate" | is.na(indicator)) |>
       filter(!is.na(value)) |>
@@ -261,28 +269,46 @@ if (nrow(demographics) > 0 && !"note" %in% colnames(demographics)) {
       slice_max(year, n = 1) |>
       ungroup() |>
       filter(!is.na(province)) |>
-      slice_max(value, n = 15)
+      slice_max(value, n = 20) |>
+      mutate(
+        is_border = province %in% border_provs | str_detect(province, "Ceuta|Melilla|Las Palmas|Tenerife|Cádiz|Almería|Málaga|Huelva"),
+        prov_label = ifelse(is_border, paste0(province, " *"), province)
+      )
+
+    natl_avg <- demographics |>
+      filter(indicator == "unemployment_rate" | is.na(indicator)) |>
+      filter(!is.na(value)) |>
+      group_by(province) |>
+      slice_max(year, n = 1) |>
+      ungroup() |>
+      pull(value) |>
+      mean(na.rm = TRUE)
 
     p2 <- ggplot(top_provinces,
-                 aes(x = reorder(province, value),
+                 aes(x = reorder(prov_label, value),
                      y = value,
-                     fill = value)) +
+                     fill = is_border)) +
       geom_col(show.legend = FALSE) +
+      geom_hline(yintercept = natl_avg, linetype = "dashed",
+                 colour = "#555555", linewidth = 0.6) +
+      annotate("text", x = 1.5, y = natl_avg + 0.5,
+               label = paste0("National avg: ", round(natl_avg, 1), "%"),
+               colour = "#555555", size = 3, hjust = 0) +
       coord_flip() +
-      scale_fill_gradient(low = "#fdae6b", high = "#a63603") +
-      scale_y_continuous(labels = label_comma()) +
+      scale_fill_manual(values = c("FALSE" = "#fdae6b", "TRUE" = "#a63603")) +
+      scale_y_continuous(labels = function(x) paste0(x, "%")) +
       labs(
-        title    = "Top 15 Provinces by Unemployment Rate (Latest Quarter)",
-        subtitle = "High-unemployment provinces may react differently to immigration rhetoric",
+        title    = "Provincial Unemployment: Immigration Gateway Provinces",
+        subtitle = "Starred (*) provinces are border/coastal entry points — economic vulnerability\nmay amplify receptivity to anti-immigration rhetoric",
         x        = NULL,
         y        = "Unemployment rate (%)",
-        caption  = "Source: INE EPA (Encuesta de Población Activa), Table 65349"
+        caption  = "Source: INE EPA (Table 65349) · * = border or maritime immigration entry provinces"
       ) +
       theme_project()
 
     ggsave("output/plots/02_reaction_map.png",
-           p2, width = 10, height = 7, dpi = 150)
-    cat("    Saved: output/plots/02_reaction_map.png (bar fallback)\n")
+           p2, width = 10, height = 7, dpi = 300)
+    cat("    Saved: output/plots/02_reaction_map.png (provincial chart)\n")
   }
 
 } else {
@@ -292,7 +318,7 @@ if (nrow(demographics) > 0 && !"note" %in% colnames(demographics)) {
              label = "Demographics data not available.\nRun script 03 first.",
              size = 6, colour = "grey50") +
     theme_void()
-  ggsave("output/plots/02_reaction_map.png", p2, width = 10, height = 9, dpi = 150)
+  ggsave("output/plots/02_reaction_map.png", p2, width = 10, height = 9, dpi = 300)
 }
 
 # ==============================================================================
@@ -307,6 +333,13 @@ if (nrow(salience) > 0 && "salience_score" %in% colnames(salience) &&
   # Use normalised immigration volume if salience_score is all 100% (España pagination incomplete)
   salience <- salience |>
     mutate(year_month = as.Date(year_month))
+
+  # Compute normalised volume if missing from CSV
+  if (!"imm_volume_norm" %in% colnames(salience) && "n_immigration" %in% colnames(salience)) {
+    salience <- salience |>
+      mutate(imm_volume_norm = round(n_immigration / max(n_immigration, na.rm = TRUE) * 100, 1))
+    cat("    NOTE: Computed imm_volume_norm from n_immigration (column was missing from CSV)\n")
+  }
 
   use_col <- if ("imm_volume_norm" %in% colnames(salience) &&
                  n_distinct(salience$imm_volume_norm, na.rm = TRUE) > 1) {
@@ -366,9 +399,10 @@ if (nrow(salience) > 0 && "salience_score" %in% colnames(salience) &&
                  colour = PSOE_COLOR, size = 2.5, shape = 18)
     }} +
 
-    scale_fill_manual(values = c("FALSE" = "#A8DADC", "TRUE" = ACCENT)) +
+    scale_fill_manual(values = c("FALSE" = "#A8DADC", "TRUE" = ACCENT),
+                      labels = c("FALSE" = "Normal", "TRUE" = "Peak month")) +
     scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
-    scale_y_continuous(name = y_label) +
+    scale_y_continuous(name = y_label, expand = expansion(mult = c(0, 0.08))) +
     labs(
       title    = "Immigration Media Volume — Monthly El País Coverage",
       subtitle = paste0(
@@ -382,7 +416,7 @@ if (nrow(salience) > 0 && "salience_score" %in% colnames(salience) &&
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   ggsave("output/plots/03_salience_barchart.png",
-         p3, width = 14, height = 6, dpi = 150)
+         p3, width = 14, height = 6, dpi = 300)
   cat("    Saved: output/plots/03_salience_barchart.png\n")
 
 } else {
@@ -393,7 +427,63 @@ if (nrow(salience) > 0 && "salience_score" %in% colnames(salience) &&
              size = 6, colour = "grey50") +
     theme_void()
   ggsave("output/plots/03_salience_barchart.png",
-         p3, width = 14, height = 6, dpi = 150)
+         p3, width = 14, height = 6, dpi = 300)
+}
+
+# ==============================================================================
+# PLOT 4: Salience vs PSOE Scatter (correlation visualisation)
+# ==============================================================================
+
+cat("  Building Plot 4: Salience vs PSOE scatter...\n")
+
+master_panel_path <- "data/processed/master_panel.csv"
+if (file.exists(master_panel_path)) {
+  panel_data <- read_csv(master_panel_path, show_col_types = FALSE) |>
+    mutate(year_month = as.Date(year_month))
+
+  # Colour-code by period
+  panel_col <- panel_data |>
+    filter(!is.na(psoe_avg), !is.na(imm_volume_norm)) |>
+    mutate(
+      period = case_when(
+        year_month < as.Date("2024-07-01") ~ "Early (Nov 23\u2013Jun 24)",
+        year_month < as.Date("2025-07-01") ~ "Mid (Jul 24\u2013Jun 25)",
+        TRUE                               ~ "Late (Jul 25\u2013Feb 26)"
+      ),
+      period = factor(period, levels = c(
+        "Early (Nov 23\u2013Jun 24)",
+        "Mid (Jul 24\u2013Jun 25)",
+        "Late (Jul 25\u2013Feb 26)"
+      ))
+    )
+
+  r_val <- cor(panel_col$imm_volume_norm, panel_col$psoe_avg, use = "complete.obs")
+
+  p4 <- ggplot(panel_col, aes(x = imm_volume_norm, y = psoe_avg)) +
+    geom_point(aes(colour = period), size = 3.5, alpha = 0.85) +
+    geom_smooth(method = "lm", se = TRUE,
+                colour = ACCENT, fill = ACCENT, alpha = 0.12,
+                linewidth = 0.9) +
+    scale_colour_manual(values = c("#56B4E9", "#332288", PSOE_COLOR)) +
+    scale_x_continuous(labels = function(x) paste0(x)) +
+    scale_y_continuous(labels = function(x) paste0(x, "%")) +
+    labs(
+      title    = "Immigration Media Salience vs PSOE Voting Intention",
+      subtitle = paste0("Each point = one month (N = ", nrow(panel_col),
+                        ")   \u00b7   Pearson r = ", round(r_val, 3)),
+      x        = "Immigration salience (El Pa\u00eds, normalised 0\u2013100)",
+      y        = "PSOE vote intention (%)",
+      colour   = NULL,
+      caption  = "Sources: El Pa\u00eds immigration articles; Wikipedia opinion polls"
+    ) +
+    theme_project() +
+    theme(legend.position = "bottom")
+
+  ggsave("output/plots/04_salience_scatter.png",
+         p4, width = 9, height = 7, dpi = 300)
+  cat("    Saved: output/plots/04_salience_scatter.png\n")
+} else {
+  cat("    SKIP: master_panel.csv not found — run script 06 first\n")
 }
 
 # ==============================================================================
@@ -410,7 +500,7 @@ if (exists("p1") && exists("p3")) {
       theme   = theme(plot.title = element_text(face = "bold", size = 15))
     )
   ggsave("output/plots/00_combined_summary.png",
-         combined, width = 14, height = 12, dpi = 150)
+         combined, width = 14, height = 12, dpi = 300)
   cat("    Saved: output/plots/00_combined_summary.png\n")
 }
 
