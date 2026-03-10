@@ -1,5 +1,5 @@
 model,r.squared,adj.r.squared,AIC,BIC,nobs
-M1: Trend only,0.695,0.684,77.61,81.606,28
-M2: Trend + Gov. statements,0.705,0.682,78.668,83.996,28
-M3: Trend + Statements + Salience (main),0.727,0.693,78.541,85.202,28
-M4: Lagged predictors,0.693,0.652,78.761,85.241,27
+M1: Trend only,0.706,0.695,77.482,81.479,28
+M2: Trend + Gov. statements,0.719,0.696,78.284,83.613,28
+M3: Trend + Statements + Salience (main),0.737,0.705,78.358,85.02,28
+M4: Lagged predictors,0.701,0.662,78.926,85.406,27

@@ -45,6 +45,9 @@ cat("    -> Saved: data/processed/monthly_polls.csv\n\n")
 # --- 3. Fetch INE demographic data via API ------------------------------------
 cat("[3/8] Fetching INE demographic data (API)...\n")
 source("scripts/03_ine_demographics.R")
+cat("    -> Saved: data/raw/ine_unemployment_quarterly.csv\n")
+cat("    -> Saved: data/raw/ine_unemployment_annual.csv\n")
+cat("    -> Saved: data/raw/ine_foreign_population.csv\n")
 cat("    -> Saved: data/raw/ine_demographics_raw.csv\n\n")
 
 # --- 4. Scrape El País for media salience -------------------------------------
@@ -58,7 +61,8 @@ cat("[5/8] Generating visualisations...\n")
 source("scripts/05_visualizations.R")
 cat("    -> Saved: output/plots/01_speech_vs_polls_timeline.png\n")
 cat("    -> Saved: output/plots/02_reaction_map.png\n")
-cat("    -> Saved: output/plots/03_salience_barchart.png\n\n")
+cat("    -> Saved: output/plots/03_salience_barchart.png\n")
+cat("    -> (04_salience_scatter.png deferred to step 6b — requires master panel)\n\n")
 
 # --- 6. Statistical analysis and 2027 forecast --------------------------------
 cat("[6/8] Running statistical analysis and 2027 electoral forecast...\n")
@@ -74,6 +78,11 @@ cat("    -> Saved: data/processed/arima_prediction_se.csv\n")
 cat("    -> Saved: data/processed/pp_psoe_correlation.csv\n")
 cat("    -> Saved: data/processed/forecast_accuracy.csv\n")
 cat("    -> Saved: data/processed/diagnostics_summary.csv\n\n")
+
+# --- 6b. Generate scatter plot (depends on master_panel.csv from step 6) ------
+cat("[6b/8] Generating scatter plot (requires master panel)...\n")
+source("scripts/05_visualizations.R")  # re-run: scatter plot now has master_panel.csv
+cat("    -> Saved: output/plots/04_salience_scatter.png\n\n")
 
 # --- 7. D'Hondt seat projection model -----------------------------------------
 cat("[7/8] Running D'Hondt seat projection model (Monte Carlo n=5000)...\n")

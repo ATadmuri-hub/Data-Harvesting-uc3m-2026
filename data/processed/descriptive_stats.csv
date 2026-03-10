@@ -1,8 +1,8 @@
 Variable,N,Mean,SD,Min,Median,Max
-PSOE (% voting intention),28,27.17,1.6,23.67,26.98,29.48
-PP (% voting intention),28,30.27,2.52,26.62,29.63,35.21
-Vox (% voting intention),28,12.88,2.71,9.79,12.52,18.32
-Gov. immigration statements (count/month),28,2.25,1.82,0,2,8
-El País immigration volume (0–100 norm.),28,61.76,22.73,24.5,63.45,100
-El País immigration articles (raw count),28,128.46,47.28,51,132,208
+PSOE (% voting intention),28,27.15,1.63,23.67,26.98,29.48
+PP (% voting intention),28,30.24,2.55,26.62,29.63,35.21
+Vox (% voting intention),28,12.87,2.71,9.79,12.52,18.79
+Gov. immigration statements (count/month),28,2.29,1.8,0,2,8
+El País immigration volume (0–100 norm.),28,62.39,23.04,24.5,67.3,100
+El País immigration articles (raw count),28,129.79,47.92,51,140,208
 National unemployment rate (%),26,11.59,0.58,11,12,12.67

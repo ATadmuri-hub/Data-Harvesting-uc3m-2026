@@ -67,7 +67,7 @@ install.packages(c(
 ### 2. Clone and run
 
 ``` bash
-git clone https://github.com/YOUR_USERNAME/spain-immigration-project.git
+git clone https://github.com/ATadmuri-hub/Data-Harvesting-uc3m-2026.git
 cd spain-immigration-project
 Rscript main.R
 # Then render the HTML report:
@@ -118,6 +118,8 @@ The pipeline runs eight steps:
 | `output/plots/01_speech_vs_polls_timeline.png` | Line graph: PSOE popularity + speech markers |
 | `output/plots/02_reaction_map.png` | Provincial chart of poll shifts |
 | `output/plots/03_salience_barchart.png` | Immigration media salience by month |
+| `output/plots/04_salience_scatter.png` | Scatter: media salience vs PSOE voting intention |
+| `output/plots/00_combined_summary.png` | Combined summary panel (timeline + salience) |
 | `report.html` | Full HTML report (rendered from `report.Rmd`) |
 | `presentation.html` | xaringan slide deck (rendered from `presentation.Rmd`) |
 

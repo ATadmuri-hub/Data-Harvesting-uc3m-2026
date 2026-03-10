@@ -30,7 +30,9 @@ library(scales)
 library(vars)
 library(tseries)
 
-# Re-attach dplyr::select after MASS (loaded by vars) masks it
+# The {vars} package loads {MASS}, which masks dplyr::select(). We re-attach
+# dplyr's version here so that subsequent select() calls work as expected.
+# This is a common namespace conflict in R when mixing tidyverse with {vars}.
 select <- dplyr::select
 
 # --- 1. Build master panel ---------------------------------------------------

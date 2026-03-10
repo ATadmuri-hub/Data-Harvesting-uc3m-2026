@@ -19,6 +19,7 @@
 
 library(rvest)
 library(httr2)
+library(xml2)
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -54,21 +55,24 @@ Sys.sleep(2)
 # Wikipedia uses party logos (images) as column headers — text is in img$alt
 
 get_col_names <- function(tbl) {
-  rows <- tbl |> html_elements("tr")
-  if (length(rows) == 0) return(character(0))
+  # Note: html_table() cannot extract party names from Wikipedia polling tables
+  # because the column headers contain <img> elements (party logos), not text.
+  # Standard html_table() returns empty strings for these columns. We therefore
+  # parse the header row manually, using XPath to extract img/@alt attributes.
+  header_ths <- tbl |> xml_find_all(".//tr[1]/th")
+  if (length(header_ths) == 0) return(character(0))
 
-  header_row <- rows[[1]]
-  ths <- header_row |> html_elements("th")
-
-  names <- map_chr(ths, function(th) {
+  names <- map_chr(header_ths, function(th) {
     # Try plain text first
-    txt <- html_text(th, trim = TRUE)
+    txt <- xml_text(th, trim = TRUE)
     if (nchar(txt) > 0) return(txt)
-    # Then img alt
-    img_alt <- th |> html_element("img") |> html_attr("alt")
+    # Then use XPath to get the alt attribute from any descendant <img>.
+    # XPath ".//img/@alt" navigates to child img nodes and extracts the alt
+    # attribute directly — this is how we recover party names from logo images.
+    img_alt <- th |> xml_find_first(".//img") |> xml_attr("alt")
     if (!is.na(img_alt) && nchar(img_alt) > 0) return(img_alt)
-    # Then link title
-    a_title <- th |> html_element("a") |> html_attr("title")
+    # Then link title via XPath descendant axis
+    a_title <- th |> xml_find_first(".//a") |> xml_attr("title")
     if (!is.na(a_title) && nchar(a_title) > 0) return(a_title)
     return("unknown")
   })
@@ -129,15 +133,19 @@ parse_polls_table <- function(tbl, assumed_year) {
   }
 
   # Parse date: fieldwork dates look like "22–29 Dec", "31 Dec", "2–6 Feb 2026"
+  # Uses str_extract() with regex patterns to pull structured date components
+  # from free-text fieldwork date strings.
   parse_date_field <- function(x, year_hint) {
     if (is.na(x) || nchar(trimws(x)) == 0) return(NA_Date_)
 
-    # Remove footnotes like [1]
+    # Remove footnotes like [1] using regex: \[\d+\] matches "[" + digits + "]"
     x <- str_replace_all(x, "\\[\\d+\\]", "") |> str_trim()
 
-    # If contains a 4-digit year, use it
+    # If contains a 4-digit year, use it — regex: \d{4} = exactly 4 digits
     if (str_detect(x, "\\d{4}")) {
-      # Extract end date from range if needed: "2–6 Feb 2026" -> "6 Feb 2026"
+      # Extract end date: regex "\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4}" matches
+      # 1-2 digits (day) + whitespace + letters (month) + whitespace + 4 digits (year)
+      # e.g., "2–6 Feb 2026" → extracts "6 Feb 2026"
       end_part <- str_extract(x, "\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4}")
       if (is.na(end_part)) end_part <- x
       return(suppressWarnings(dmy(end_part)))

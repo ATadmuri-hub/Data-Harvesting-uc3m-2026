@@ -1,0 +1,21 @@
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Rendered outputs (regenerate with Rscript -e "rmarkdown::render('report.Rmd')")
+report.html
+presentation.html
+README.html
+
+# xaringan build artifacts (regenerated when presentation.Rmd is rendered)
+libs/
+presentation_files/
+
+# Class materials (not part of the project)
+\ Data\ Harvesting/

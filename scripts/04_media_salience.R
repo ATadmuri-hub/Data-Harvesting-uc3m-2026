@@ -18,6 +18,7 @@
 
 library(rvest)
 library(httr2)
+library(xml2)
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -54,16 +55,20 @@ scrape_elpais_page <- function(url) {
   if (is.null(page)) return(tibble())
   Sys.sleep(runif(1, 3, 5))
 
-  # Extract headlines
+  # Extract headlines using XPath union operator: "//h2 | //h3" selects all
+  # <h2> and <h3> elements anywhere in the document tree. This is equivalent
+  # to the CSS selector "h2, h3" but uses XPath's explicit descendant axis.
   headlines <- page |>
-    html_elements("h2, h3") |>
-    html_text(trim = TRUE) |>
+    xml_find_all("//h2 | //h3") |>
+    xml_text(trim = TRUE) |>
     (\(x) x[nchar(x) > 15])()
 
-  # Extract dates from time[datetime] attributes
+  # Extract dates from time[datetime] attributes using XPath attribute selector.
+  # "//time[@datetime]" matches any <time> element that has a datetime attribute.
+  # We then extract the attribute value with xml_attr() to get ISO 8601 timestamps.
   times <- page |>
-    html_elements("time[datetime]") |>
-    html_attr("datetime")
+    xml_find_all("//time[@datetime]") |>
+    xml_attr("datetime")
 
   # Parse ISO 8601 timestamps
   dates <- suppressWarnings(ymd_hms(times, tz = "Europe/Madrid"))

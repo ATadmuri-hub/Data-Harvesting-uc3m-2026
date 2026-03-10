@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Documentation — Spanish Immigration Rhetoric &amp; Government Popularity</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --text: #1a1a2e;
+    --accent: #1D3557;
+    --blue: #0072B2;
+    --red: #D55E00;
+    --green: #009E73;
+    --orange: #E69F00;
+    --purple: #CC79A7;
+    --light-blue: #e8f0fe;
+    --light-red: #fde8e0;
+    --light-green: #e0f5ef;
+    --light-orange: #fef3e0;
+    --light-purple: #f5e8f0;
+    --border: #d1d9e6;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem 4rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    color: var(--accent);
+    border-bottom: 4px solid var(--accent);
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    font-size: 1.05rem;
+    color: #555;
+    margin-bottom: 2rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+    color: var(--accent);
+    margin-top: 2.5rem;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--border);
+  }
+  h2 .step-num {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    text-align: center;
+    line-height: 2rem;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  h3 {
+    font-size: 1.15rem;
+    color: #333;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  p { margin-bottom: 0.8rem; }
+  strong { color: #111; }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .meta-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .meta-card .num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+  }
+  .meta-card .label {
+    font-size: 0.85rem;
+    color: #666;
+    display: block;
+    margin-top: 0.2rem;
+  }
+
+  .box {
+    border-radius: 8px;
+    padding: 1rem 1.3rem;
+    margin: 1rem 0;
+    border-left: 4px solid;
+  }
+  .box.blue   { background: var(--light-blue);   border-color: var(--blue); }
+  .box.red    { background: var(--light-red);    border-color: var(--red); }
+  .box.green  { background: var(--light-green);  border-color: var(--green); }
+  .box.orange { background: var(--light-orange); border-color: var(--orange); }
+  .box.purple { background: var(--light-purple); border-color: var(--purple); }
+  .box .box-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.92rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  thead th {
+    background: var(--accent);
+    color: white;
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tbody td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  tbody tr:nth-child(even) { background: #f8fafd; }
+  tbody tr:hover { background: #eef3f9; }
+
+  code {
+    background: #edf0f5;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.88em;
+    color: #c7254e;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  pre .comment { color: #6c7086; }
+  pre .string  { color: #a6e3a1; }
+  pre .keyword { color: #cba6f7; }
+  pre .func    { color: #89b4fa; }
+  pre .number  { color: #fab387; }
+
+  .fix-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .fix-badge.critical { background: #fde8e0; color: #c62828; }
+  .fix-badge.major    { background: #fff3e0; color: #e65100; }
+  .fix-badge.minor    { background: #e8f5e9; color: #2e7d32; }
+  .fix-badge.new      { background: #e3f2fd; color: #1565c0; }
+
+  .timeline {
+    position: relative;
+    padding-left: 2.5rem;
+    margin: 1rem 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.8rem;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.2rem;
+    padding: 0.8rem 1.2rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2rem;
+    top: 1.1rem;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .timeline-item .time {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 600;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+  .toc {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .toc h3 { margin-top: 0; color: var(--accent); }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin-bottom: 0.3rem; font-size: 0.95rem; }
+  .toc a { color: var(--blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .author-block {
+    display: flex;
+    gap: 2rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .author-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+    flex: 1;
+    min-width: 200px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .author-card .name { font-weight: 700; color: var(--accent); }
+  .author-card .id { font-size: 0.85rem; color: #888; }
+</style>
+</head>
+<body>
+
+<h1>Project Documentation</h1>
+<p class="subtitle">
+  Spanish Government Immigration Rhetoric &amp; Electoral Support — Data Harvesting Course, UC3M Spring 2026<br>
+  <strong>Instructor:</strong> Patricia Callejo &nbsp;|&nbsp; <strong>Due:</strong> March 12, 2026 &nbsp;|&nbsp; <strong>Presentation:</strong> March 19, 2026
+</p>
+
+<div class="author-block">
+  <div class="author-card"><span class="name">Abdullah Tadmuri</span><br><span class="id">100502844</span></div>
+  <div class="author-card"><span class="name">Maiheliya Maimaitimin</span><br><span class="id">100562134</span></div>
+  <div class="author-card"><span class="name">Tone Varberg Sabri</span><br><span class="id">100570811</span></div>
+</div>
+
+<div class="meta-grid">
+  <div class="meta-card"><span class="num">4</span><span class="label">Data Sources</span></div>
+  <div class="meta-card"><span class="num">28</span><span class="label">Months Covered</span></div>
+  <div class="meta-card"><span class="num">429</span><span class="label">Polls Scraped</span></div>
+  <div class="meta-card"><span class="num">3,634</span><span class="label">Articles Collected</span></div>
+  <div class="meta-card"><span class="num">64</span><span class="label">Press Releases</span></div>
+  <div class="meta-card"><span class="num">8</span><span class="label">Pipeline Scripts</span></div>
+</div>
+
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">Research Question and Political Context</a></li>
+    <li><a href="#s2">Project Architecture and File Structure</a></li>
+    <li><a href="#s3">Source 1 — La Moncloa Press Releases (CDX API + HTML Scraping)</a></li>
+    <li><a href="#s4">Source 2 — Wikipedia Opinion Polls (HTML Table Scraping)</a></li>
+    <li><a href="#s5">Source 3 — INE Demographics (REST/JSON API)</a></li>
+    <li><a href="#s6">Source 4 — El Pa&iacute;s Media Salience (Paginated Scraping)</a></li>
+    <li><a href="#s7">Visualizations and Exploratory Analysis</a></li>
+    <li><a href="#s8">Statistical Analysis and Modeling</a></li>
+    <li><a href="#s9">D'Hondt Seat Projections (Monte Carlo)</a></li>
+    <li><a href="#s10">Historical Comparison — 2005 Zapatero Regularisation</a></li>
+    <li><a href="#s11">Course Techniques Applied</a></li>
+    <li><a href="#s12">Challenges Encountered and Solutions</a></li>
+    <li><a href="#s13">Bugs Found, Fixes Applied, and Quality Audit</a></li>
+    <li><a href="#s14">Ethical Compliance</a></li>
+    <li><a href="#s15">Final Data Verification</a></li>
+    <li><a href="#s16">Key Findings</a></li>
+    <li><a href="#s17">Reproducibility Instructions</a></li>
+  </ol>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s1"><span class="step-num">1</span> Research Question and Political Context</h2>
+
+<div class="box blue">
+  <div class="box-title">Research Question</div>
+  Does the frequency of official government immigration statements correlate with shifts in PSOE electoral support over the 2023&ndash;2026 governing period, and can historical data produce a credible 2027 electoral forecast?
+</div>
+
+<h3>Why This Topic?</h3>
+<p>Spain offers a rare natural experiment. Pedro S&aacute;nchez leads a fragile left-wing minority government (dependent on Junts, ERC, Bildu, PNV) that has faced three overlapping pressures since November 2023:</p>
+<ul>
+  <li><strong>Record Canary Islands arrivals</strong> via the Atlantic migration route throughout 2024</li>
+  <li><strong>Blocked distribution of unaccompanied minors</strong> (MENA) between Autonomous Communities in 2024&ndash;2025</li>
+  <li><strong>An extraordinary regularisation decree</strong> in January 2026 targeting ~500,000 undocumented migrants &mdash; the first mass legalisation since Zapatero&rsquo;s 2005 process</li>
+</ul>
+<p>This makes Spain an ideal case to study whether government communication on immigration helps or hurts the governing party electorally.</p>
+
+<h3>Hypotheses</h3>
+<table>
+  <thead><tr><th>Hypothesis</th><th>Direction</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td><strong>H1 (Framing):</strong> Government press releases on immigration reassure centrist voters</td><td>PSOE improves</td><td>Not supported (r = 0.074)</td></tr>
+    <tr><td><strong>H2 (Issue Ownership):</strong> Higher media salience benefits right-leaning parties (Petrocik, 1996)</td><td>PSOE falls</td><td><strong>Supported</strong> (r = &minus;0.699)</td></tr>
+    <tr><td><strong>H3 (Attrition):</strong> Mid-term governmental fatigue is a democratic regularity</td><td>PSOE falls</td><td><strong>Supported</strong> (&beta; = &minus;0.138 pp/month)</td></tr>
+  </tbody>
+</table>
+
+<h3>Study Window</h3>
+<p><strong>28 months:</strong> November 2023 (S&aacute;nchez investiture) through February 2026 (regularisation decree aftermath). PSOE polling fell from <strong>29.1%</strong> to <strong>25.8%</strong> &mdash; a cumulative decline of <strong>3.3 percentage points</strong>.</p>
+
+<!-- ================================================================== -->
+<h2 id="s2"><span class="step-num">2</span> Project Architecture and File Structure</h2>
+
+<p>The project follows a linear pipeline design: each script reads from the previous step&rsquo;s outputs and writes to <code>data/raw/</code> or <code>data/processed/</code>. The master orchestration script <code>main.R</code> sources all 8 scripts in sequence.</p>
+
+<pre>
+spain-immigration-project/
+├── main.R                        <span class="comment"># Master script — runs all 8 steps in order</span>
+├── report.Rmd                    <span class="comment"># Full HTML report (81 R chunks, 1,977 lines)</span>
+├── report_style.css              <span class="comment"># Custom CSS for the report</span>
+├── presentation.Rmd              <span class="comment"># xaringan slide deck (21 chunks, 1,235 lines)</span>
+├── presentation_style.css        <span class="comment"># Custom CSS for the slides</span>
+├── scripts/
+│   ├── 01_scrape_lamoncloa.R     <span class="comment"># Wayback CDX API + live HTML scraping (330 lines)</span>
+│   ├── 02_scrape_polls.R         <span class="comment"># Wikipedia opinion poll table scraping (258 lines)</span>
+│   ├── 03_ine_demographics.R     <span class="comment"># INE REST/JSON API — unemployment + foreign pop (256 lines)</span>
+│   ├── 04_media_salience.R       <span class="comment"># El País paginated topic scraping (222 lines)</span>
+│   ├── 05_visualizations.R       <span class="comment"># All plots and maps (512 lines)</span>
+│   ├── 06_analysis_model.R       <span class="comment"># OLS, ARIMA, ETS, VAR, Granger, diagnostics (667 lines)</span>
+│   ├── 07_dhondt_projection.R    <span class="comment"># D'Hondt seat projection + Monte Carlo (428 lines)</span>
+│   └── 08_historical_2005.R      <span class="comment"># 2004–2008 ITS comparison analysis (286 lines)</span>
+├── data/
+│   ├── raw/                      <span class="comment"># 7 raw CSV files from scraping/API</span>
+│   └── processed/                <span class="comment"># 22 processed CSV files for analysis</span>
+└── output/
+    └── plots/                    <span class="comment"># 5 PNG visualizations</span>
+</pre>
+
+<p><strong>Total code:</strong> 6,261 lines of R across all scripts, Rmd files, and main.R. Every path is relative &mdash; no hardcoded absolute paths anywhere. The pipeline runs on any machine with R &ge; 4.3 and internet access.</p>
+
+<!-- ================================================================== -->
+<h2 id="s3"><span class="step-num">3</span> Source 1 — La Moncloa Press Releases</h2>
+
+<div class="box orange">
+  <div class="box-title">The Problem</div>
+  La Moncloa&rsquo;s press index page (<code>index.aspx?Anyo=&amp;Mes=</code>) uses client-side JavaScript filtering. The URL parameters are ignored by the server &mdash; every HTTP request returns today&rsquo;s content regardless of the year/month you specify. Standard scraping tools (<code>rvest</code>, <code>httr2</code>) see only the current page, not historical press releases.
+</div>
+
+<h3>The Solution: Two-Stage Architecture</h3>
+
+<p><strong>Stage 1 &mdash; URL Discovery via Wayback Machine CDX API.</strong> The Internet Archive&rsquo;s CDX API indexes historical snapshots of web pages. We queried it for all archived URLs from three immigration-related ministries (Interior, Inclusi&oacute;n, Exteriores) between November 2023 and February 2026. This gave us <strong>647 unique URLs</strong> after case-insensitive deduplication.</p>
+
+<pre>
+<span class="comment"># CDX API query for each ministry/year combination</span>
+cdx_url &lt;- <span class="func">paste0</span>(
+  <span class="string">"https://web.archive.org/cdx/search/cdx"</span>,
+  <span class="string">"?url=www.lamoncloa.gob.es/ministerios/"</span>, ministry, <span class="string">"/*"</span>,
+  <span class="string">"&amp;output=json&amp;limit=5000"</span>,
+  <span class="string">"&amp;from="</span>, <span class="string">"20231101"</span>,
+  <span class="string">"&amp;to="</span>,   <span class="string">"20260301"</span>,
+  <span class="string">"&amp;filter=statuscode:200"</span>
+)
+</pre>
+
+<p><strong>Stage 2 &mdash; Live HTML Scraping with XPath.</strong> The 647 CDX URLs were filtered by immigration slug keywords (25 terms like <code>inmigra</code>, <code>regulariza</code>, <code>asilo</code>, <code>frontera</code>), yielding <strong>64 candidate URLs</strong>. Each was fetched from the live La Moncloa server and parsed using XPath:</p>
+
+<pre>
+<span class="comment"># XPath: find &lt;h1&gt; anywhere in the DOM tree (descendant axis)</span>
+title &lt;- page |&gt;
+  <span class="func">xml_find_first</span>(<span class="string">"//h1"</span>) |&gt;
+  <span class="func">xml_text</span>(trim = <span class="keyword">TRUE</span>)
+
+<span class="comment"># XPath union: try multiple body containers with contains() function</span>
+text_nodes &lt;- page |&gt;
+  <span class="func">xml_find_all</span>(
+    <span class="string">"//div[contains(@class,'noticia-texto')]//p | //div[contains(@class,'cuerpo-noticia')]//p | //article//p"</span>
+  )
+
+<span class="comment"># Regex: extract date from URL slug</span>
+date_match &lt;- <span class="func">str_extract</span>(slug, <span class="string">"^\\d{6,8}"</span>)
+</pre>
+
+<h3>What This Produced</h3>
+<table>
+  <thead><tr><th>Output File</th><th>Rows</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/raw/lamoncloa_raw.csv</code></td><td>647</td><td>All CDX-discovered URLs with metadata</td></tr>
+    <tr><td><code>data/processed/immigration_statements.csv</code></td><td>64</td><td>Confirmed immigration releases with full text</td></tr>
+    <tr><td><code>data/processed/monthly_statements.csv</code></td><td>28</td><td>Monthly statement counts (range: 0&ndash;8)</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s4"><span class="step-num">4</span> Source 2 — Wikipedia Opinion Polls</h2>
+
+<p><strong>Target:</strong> The Wikipedia article <em>&ldquo;Opinion polling for the next Spanish general election&rdquo;</em> contains 5 wikitables (one per year + historical CIS series) with polling firm, dates, sample size, and vote shares per party.</p>
+
+<div class="box blue">
+  <div class="box-title">The Image Header Problem</div>
+  Wikipedia polling tables use party logos (<code>&lt;img&gt;</code> elements) as column headers instead of text. The standard <code>html_table()</code> function cannot read them &mdash; it returns empty or &ldquo;unknown&rdquo; column names. We solved this with XPath by extracting the <code>alt</code> attribute from the <code>&lt;img&gt;</code> tags inside each <code>&lt;th&gt;</code> cell.
+</div>
+
+<pre>
+<span class="comment"># XPath: extract party names from image alt attributes in header row</span>
+header_ths &lt;- tbl |&gt; <span class="func">xml_find_all</span>(<span class="string">".//tr[1]/th"</span>)
+col_names &lt;- <span class="func">map_chr</span>(header_ths, <span class="keyword">function</span>(th) {
+  txt &lt;- <span class="func">xml_text</span>(th, trim = <span class="keyword">TRUE</span>)
+  <span class="keyword">if</span> (<span class="func">nchar</span>(txt) &gt; <span class="number">0</span>) <span class="keyword">return</span>(txt)
+  <span class="comment"># Fallback: read the image alt attribute</span>
+  img_alt &lt;- th |&gt; <span class="func">xml_find_first</span>(<span class="string">".//img"</span>) |&gt; <span class="func">xml_attr</span>(<span class="string">"alt"</span>)
+  <span class="keyword">if</span> (!<span class="func">is.na</span>(img_alt)) <span class="keyword">return</span>(img_alt)
+  <span class="keyword">return</span>(<span class="string">"unknown"</span>)
+})
+</pre>
+
+<p>Percentage columns contained ranges (e.g., <code>"28.1&ndash;29.3%"</code>) that required regex midpoint extraction. Fieldwork dates spanned two rows and needed <code>lubridate::dmy()</code> with fallback logic. The 47+ polling firms had inconsistent name formatting that was standardised.</p>
+
+<h3>What This Produced</h3>
+<table>
+  <thead><tr><th>Output File</th><th>Rows</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/raw/polls_raw.csv</code></td><td>429</td><td>All Wikipedia opinion poll rows (raw)</td></tr>
+    <tr><td><code>data/processed/monthly_polls.csv</code></td><td>28</td><td>Monthly PSOE/PP/Vox/Sumar averages</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s5"><span class="step-num">5</span> Source 3 — INE Demographics (REST/JSON API)</h2>
+
+<p>The INE (Instituto Nacional de Estad&iacute;stica) provides a public REST/JSON API at <code>servicios.ine.es/wstempus/js/ES/</code>. No authentication required. We fetched two series:</p>
+
+<div class="two-col">
+  <div class="box green">
+    <div class="box-title">1. EPA Unemployment by Province</div>
+    Table 65349, Operation 293 (Encuesta de Poblaci&oacute;n Activa). Quarterly data for all 47 Spanish provinces. 477 series covering unemployment rates by sex.
+  </div>
+  <div class="box green">
+    <div class="box-title">2. Foreign Population Trend</div>
+    Table 9683, filtered to total non-Spanish population at national level. Variables: <code>tv=70032:16420</code> (total nationality), <code>tv=70013:451</code> (ambos sexos). Foreign = total &minus; Spanish.
+  </div>
+</div>
+
+<pre>
+<span class="comment"># httr2 request builder with retry logic and timeout</span>
+resp &lt;- <span class="func">request</span>(url) |&gt;
+  <span class="func">req_headers</span>(`User-Agent` = UA) |&gt;
+  <span class="func">req_retry</span>(max_tries = <span class="number">3</span>, backoff = ~<span class="number">10</span>) |&gt;
+  <span class="func">req_timeout</span>(<span class="number">30</span>) |&gt;
+  <span class="func">req_perform</span>()
+
+<span class="comment"># Parse JSON response</span>
+data &lt;- resp |&gt; <span class="func">resp_body_json</span>()
+</pre>
+
+<p>The INE API uses a custom <code>FK_Periodo</code> encoding for time periods (e.g., code 22 = Q4 2025, code 21 = Q3 2025). We wrote a mapping function to convert these codes to standard quarter dates. The API also has volume restrictions &mdash; large tables sometimes return error JSON instead of data, which our code handles gracefully with fallback placeholder CSVs.</p>
+
+<h3>What This Produced</h3>
+<table>
+  <thead><tr><th>Output File</th><th>Rows</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/raw/ine_unemployment_quarterly.csv</code></td><td>1,061</td><td>Quarterly unemployment by province</td></tr>
+    <tr><td><code>data/raw/ine_unemployment_annual.csv</code></td><td>212</td><td>Annual averages by province</td></tr>
+    <tr><td><code>data/raw/ine_foreign_population.csv</code></td><td>3</td><td>National foreign population (2020&ndash;2022)</td></tr>
+    <tr><td><code>data/raw/ine_demographics_raw.csv</code></td><td>215</td><td>Combined long-format file</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s6"><span class="step-num">6</span> Source 4 — El Pa&iacute;s Media Salience</h2>
+
+<p><strong>Target:</strong> El Pa&iacute;s immigration topic section (<code>elpais.com/noticias/inmigracion/</code>) and general Spain section (<code>elpais.com/espana/</code>).</p>
+
+<div class="box orange">
+  <div class="box-title">The Search Problem</div>
+  El Pa&iacute;s does not offer a public search API. The site&rsquo;s internal search returns 404 for programmatic requests. However, the <em>topic tag pages</em> work with static pagination: <code>/noticias/inmigracion/1/</code>, <code>/noticias/inmigracion/2/</code>, etc. Each page lists ~40&ndash;45 articles with headlines and ISO 8601 timestamps.
+</div>
+
+<p>We paginated through the immigration topic section (83 pages) and the general Spain section (40 pages), extracting headlines and dates using XPath:</p>
+
+<pre>
+<span class="comment"># XPath union: extract all h2 and h3 elements (headline containers)</span>
+headlines &lt;- page |&gt;
+  <span class="func">xml_find_all</span>(<span class="string">"//h2 | //h3"</span>) |&gt;
+  <span class="func">xml_text</span>(trim = <span class="keyword">TRUE</span>)
+
+<span class="comment"># XPath attribute selector: find &lt;time&gt; elements with datetime attribute</span>
+times &lt;- page |&gt;
+  <span class="func">xml_find_all</span>(<span class="string">"//time[@datetime]"</span>) |&gt;
+  <span class="func">xml_attr</span>(<span class="string">"datetime"</span>)
+</pre>
+
+<p>The salience index is constructed as: <code>n_immigration / max(n_immigration) &times; 100</code>, normalised to 0&ndash;100 where the peak month scores 100. This captures media agenda intensity, not just volume.</p>
+
+<h3>What This Produced</h3>
+<table>
+  <thead><tr><th>Output File</th><th>Rows</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/raw/elpais_headlines_raw.csv</code></td><td>3,634</td><td>All headlines with dates and URLs</td></tr>
+    <tr><td><code>data/processed/salience_scores.csv</code></td><td>28</td><td>Monthly salience index (0&ndash;100)</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s7"><span class="step-num">7</span> Visualizations and Exploratory Analysis</h2>
+
+<p>Script 05 generates 5 publication-quality plots using <code>ggplot2</code> with a colorblind-safe Okabe-Ito palette:</p>
+
+<table>
+  <thead><tr><th>Plot</th><th>File</th><th>What It Shows</th></tr></thead>
+  <tbody>
+    <tr><td>Timeline</td><td><code>01_speech_vs_polls_timeline.png</code></td><td>PSOE/PP polling + immigration statement markers over 28 months</td></tr>
+    <tr><td>Provincial Map</td><td><code>02_reaction_map.png</code></td><td>Provincial unemployment rate choropleth (from INE EPA data)</td></tr>
+    <tr><td>Salience Bar</td><td><code>03_salience_barchart.png</code></td><td>Monthly El Pa&iacute;s immigration salience index</td></tr>
+    <tr><td>Scatter</td><td><code>04_salience_scatter.png</code></td><td>Media salience vs PSOE voting intention (r = &minus;0.699)</td></tr>
+    <tr><td>Combined</td><td><code>00_combined_summary.png</code></td><td>Patchwork panel combining timeline + salience</td></tr>
+  </tbody>
+</table>
+
+<div class="box blue">
+  <div class="box-title">Pipeline Ordering Fix</div>
+  Plot 04 (scatter) depends on <code>master_panel.csv</code>, which is created by Script 06 (analysis). But Script 05 (visualizations) runs <em>before</em> Script 06. We solved this by adding a step 6b in <code>main.R</code> that re-runs Script 05 after Script 06 completes. The scatter plot conditional (<code>if (file.exists(master_panel_path))</code>) then finds the file and generates the plot.
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s8"><span class="step-num">8</span> Statistical Analysis and Modeling</h2>
+
+<p>Script 06 (667 lines) is the analytical core. It builds the <strong>28-month master panel</strong> by merging all four data sources on <code>year_month</code>, then runs a full suite of time-series models.</p>
+
+<h3>Master Panel Construction</h3>
+<p>The panel has <strong>28 rows &times; 18 columns</strong> including: PSOE/PP/Vox/Sumar averages, number of polls per month, government statement count, El Pa&iacute;s immigration article count, normalised salience index, national unemployment rate, time trend variable, and lagged versions of key predictors.</p>
+
+<h3>Descriptive Statistics</h3>
+<table>
+  <thead><tr><th>Variable</th><th>N</th><th>Mean</th><th>SD</th><th>Min</th><th>Max</th></tr></thead>
+  <tbody>
+    <tr><td>PSOE (% voting intention)</td><td>28</td><td>27.2</td><td>1.6</td><td>23.7</td><td>29.5</td></tr>
+    <tr><td>PP (% voting intention)</td><td>28</td><td>30.2</td><td>2.6</td><td>26.6</td><td>35.2</td></tr>
+    <tr><td>Gov. immigration statements</td><td>28</td><td>2.3</td><td>1.8</td><td>0</td><td>8</td></tr>
+    <tr><td>El Pa&iacute;s salience (0&ndash;100)</td><td>28</td><td>62.4</td><td>23.0</td><td>24.5</td><td>100</td></tr>
+    <tr><td>National unemployment (%)</td><td>26</td><td>11.6</td><td>0.6</td><td>11.0</td><td>12.7</td></tr>
+  </tbody>
+</table>
+
+<h3>Models Estimated</h3>
+
+<table>
+  <thead><tr><th>Model</th><th>Specification</th><th>R&sup2;</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>M1: Trend only</td><td>PSOE ~ time</td><td>0.695</td><td>Baseline: is there a secular decline?</td></tr>
+    <tr><td>M2: + Statements</td><td>PSOE ~ time + statements</td><td>0.696</td><td>Do government press releases help?</td></tr>
+    <tr><td><strong>M3: Full model</strong></td><td>PSOE ~ time + statements + salience</td><td><strong>0.727</strong></td><td>Main specification with all predictors</td></tr>
+    <tr><td>M4: Lagged</td><td>PSOE ~ time + lagged predictors</td><td>0.718</td><td>Test for delayed effects</td></tr>
+  </tbody>
+</table>
+
+<p>All standard errors are <strong>Newey-West HAC</strong> (heteroscedasticity and autocorrelation consistent) to account for serial correlation in monthly time series. Additionally:</p>
+<ul>
+  <li><strong>Granger causality tests</strong> — Government statements do not Granger-cause PSOE polling (F = 0.147, p = 0.864)</li>
+  <li><strong>ARIMA(0,1,0)-X model</strong> — Selected via AIC/BIC, with media salience as exogenous regressor</li>
+  <li><strong>ETS model</strong> — Exponential smoothing for comparison</li>
+  <li><strong>VAR(1) bivariate</strong> — Joint PSOE + PP forecast (exploiting their negative correlation, r = &minus;0.60)</li>
+  <li><strong>Rolling one-step-ahead forecast validation</strong> — ARIMA vs ETS accuracy comparison</li>
+  <li><strong>Full diagnostic suite</strong> — ADF test, Phillips-Perron test, Ljung-Box test on residuals</li>
+</ul>
+
+<h3>Three Forecast Scenarios to June 2027</h3>
+<p>The ARIMA-X model projects PSOE voting intention under three scenarios differentiated by future media salience levels:</p>
+<table>
+  <thead><tr><th>Scenario</th><th>PSOE June 2027</th><th>Interpretation</th></tr></thead>
+  <tbody>
+    <tr><td>Neutral</td><td>~26.1%</td><td>Media salience stays at recent average</td></tr>
+    <tr><td>High salience (regularisation debate continues)</td><td>~25.8%</td><td>Immigration stays top of news agenda</td></tr>
+    <tr><td>Low salience (issue fades)</td><td>~26.5%</td><td>Other issues dominate the news cycle</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s9"><span class="step-num">9</span> D'Hondt Seat Projections (Monte Carlo)</h2>
+
+<p>Script 07 converts vote-share forecasts into Congress seat counts using the actual Spanish electoral system: 52 constituencies (50 provinces + Ceuta + Melilla), 350 total seats, D'Hondt divisor method with a 3% threshold per constituency.</p>
+
+<p>The script includes a <strong>calibration check</strong> against the actual 2023 election results (all parties within &plusmn;4 seats of actual), then runs <strong>5,000 Monte Carlo simulations</strong> per scenario to produce probabilistic seat distributions.</p>
+
+<table>
+  <thead><tr><th>Party</th><th>Neutral</th><th>High Salience</th><th>Low Salience</th></tr></thead>
+  <tbody>
+    <tr><td><strong>PP</strong></td><td>137</td><td>136</td><td>137</td></tr>
+    <tr><td>PSOE</td><td>120</td><td>120</td><td>120</td></tr>
+    <tr><td>Vox</td><td>34</td><td>35</td><td>34</td></tr>
+    <tr><td>Sumar</td><td>27</td><td>27</td><td>27</td></tr>
+    <tr><td>Regional</td><td>32</td><td>32</td><td>32</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s10"><span class="step-num">10</span> Historical Comparison — 2005 Zapatero Regularisation</h2>
+
+<p>Script 08 scrapes 2004&ndash;2008 CIS monthly polls from Wikipedia (with embedded fallback data if scraping fails) and runs an <strong>Interrupted Time Series (ITS)</strong> analysis centred on the February 2005 regularisation.</p>
+
+<p>The ITS model with Newey-West robust SEs found that after the 2005 regularisation, PSOE&rsquo;s declining trend <strong>reversed</strong>: the party recovered at +0.493 pp/month, eventually winning the 2008 election at 43.9%. However, Zapatero governed in a strong economic environment (GDP growth &gt;3%), while S&aacute;nchez faces a fragmented parliament and elevated cost-of-living concerns. Direct comparison is limited.</p>
+
+<!-- ================================================================== -->
+<h2 id="s11"><span class="step-num">11</span> Course Techniques Applied</h2>
+
+<p>This section explicitly maps every technique taught in the Data Harvesting course to where it appears in the project.</p>
+
+<table>
+  <thead><tr><th>Technique</th><th>Where Used</th><th>Concrete Example</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>HTML table scraping</strong></td>
+      <td>Script 02 (Wikipedia)</td>
+      <td><code>html_table(fill = TRUE)</code> on 5 wikitables</td>
+    </tr>
+    <tr>
+      <td><strong>XPath expressions</strong></td>
+      <td>Scripts 01, 02, 04</td>
+      <td><code>xml_find_first("//h1")</code>, <code>xml_find_all("//div[contains(@class,'noticia-texto')]//p | ...//p")</code>, <code>xml_find_all(".//tr[1]/th")</code>, <code>xml_attr("alt")</code>, <code>xml_find_all("//time[@datetime]")</code></td>
+    </tr>
+    <tr>
+      <td><strong>CSS selectors</strong></td>
+      <td>Scripts 01&ndash;04</td>
+      <td><code>html_elements("table.wikitable")</code>, <code>html_element("time")</code></td>
+    </tr>
+    <tr>
+      <td><strong>Regex (stringr)</strong></td>
+      <td>All scripts</td>
+      <td><code>str_extract(slug, "^\\d{6,8}")</code>, <code>str_detect(text, "inmigra")</code>, <code>str_extract(pct, "\\d+\\.?\\d*")</code></td>
+    </tr>
+    <tr>
+      <td><strong>REST/JSON APIs</strong></td>
+      <td>Script 03 (INE)</td>
+      <td><code>httr2::request()</code> &rarr; <code>req_retry()</code> &rarr; <code>resp_body_json()</code> &rarr; <code>jsonlite</code> parsing</td>
+    </tr>
+    <tr>
+      <td><strong>Paginated scraping</strong></td>
+      <td>Scripts 01, 04</td>
+      <td>CDX API pagination loop (Script 01), El Pa&iacute;s <code>/noticias/inmigracion/N/</code> loop (Script 04)</td>
+    </tr>
+    <tr>
+      <td><strong>Ethical scraping</strong></td>
+      <td>All scripts</td>
+      <td><code>robotstxt</code> check, randomised <code>Sys.sleep(runif(1, 3, 5))</code>, standard browser User-Agent</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box green">
+  <div class="box-title">Coverage</div>
+  All seven core Data Harvesting topics appear at least once. XPath and CSS selectors are used side-by-side across all four web-based data sources. The XPath expressions demonstrate descendant axes (<code>//</code>), attribute predicates (<code>[@datetime]</code>), the <code>contains()</code> function, and the union operator (<code>|</code>).
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s12"><span class="step-num">12</span> Challenges Encountered and Solutions</h2>
+
+<table>
+  <thead><tr><th>Challenge</th><th>What Went Wrong</th><th>Solution Applied</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>La Moncloa JavaScript filtering</strong></td>
+      <td>The index page renders content via client-side JS. HTTP GET requests to <code>index.aspx?Anyo=2024&amp;Mes=6</code> return today&rsquo;s content, not June 2024.</td>
+      <td>Used the Wayback Machine CDX API for URL discovery, then fetched individual press release pages directly from the live server.</td>
+    </tr>
+    <tr>
+      <td><strong>Wikipedia image headers</strong></td>
+      <td>Party columns use <code>&lt;img&gt;</code> logos instead of text. <code>html_table()</code> returns empty column names.</td>
+      <td>XPath extraction of <code>img/@alt</code> attributes from each <code>&lt;th&gt;</code> cell in the first row.</td>
+    </tr>
+    <tr>
+      <td><strong>INE API volume limits</strong></td>
+      <td>Large table requests sometimes return an error JSON (<code>"No puede realizar esta consulta"</code>) instead of data.</td>
+      <td>Fetch separate series endpoints. Compute foreign = total &minus; Spanish. Graceful fallback with placeholder CSVs when endpoints fail.</td>
+    </tr>
+    <tr>
+      <td><strong>CIS data access</strong></td>
+      <td>CIS (Centro de Investigaciones Sociol&oacute;gicas) monthly barometers require manual PDF download. No API.</td>
+      <td>Switched to Wikipedia as the polling aggregation source. Wikipedia covers 47+ polling firms including CIS.</td>
+    </tr>
+    <tr>
+      <td><strong>El Pa&iacute;s search</strong></td>
+      <td>The site&rsquo;s search API returns 404 for programmatic requests. No public search endpoint.</td>
+      <td>Used static topic tag pages (<code>/noticias/inmigracion/N/</code>) which support clean pagination without authentication.</td>
+    </tr>
+    <tr>
+      <td><strong>RSelenium reproducibility</strong></td>
+      <td>RSelenium requires a local browser driver (Chrome/Firefox) whose version must match the installed browser. This breaks reproducibility across machines.</td>
+      <td>Avoided Selenium entirely. All scraping uses <code>rvest</code> + <code>httr2</code> only, ensuring the pipeline runs with zero system dependencies beyond R packages.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s13"><span class="step-num">13</span> Bugs Found, Fixes Applied, and Quality Audit</h2>
+
+<p>A comprehensive audit was conducted covering all 8 scripts, both Rmd files, all CSV outputs, and the git repository. Every issue found was fixed and verified.</p>
+
+<h3>Critical Fixes</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <span class="fix-badge critical">Critical</span>
+    <strong>Case-Sensitive URL Deduplication (Script 01)</strong>
+    <div class="time">Found during audit &bull; Fixed in scripts/01_scrape_lamoncloa.R:145</div>
+    <p>The Wayback Machine CDX API returns both <code>/Paginas/</code> and <code>/paginas/</code> variants of the same URL. The original code used <code>unique(all_cdx_urls)</code> which is case-sensitive, resulting in <strong>117 rows with 52 duplicates</strong> in the final CSV. Fixed to <code>all_cdx_urls[!duplicated(tolower(all_cdx_urls))]</code>. After fix: <strong>64 unique press releases, zero duplicates</strong>.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge critical">Critical</span>
+    <strong>Stale Hardcoded Numbers (report.Rmd + presentation.Rmd)</strong>
+    <div class="time">Found during audit &bull; Fixed across 20+ locations in both files</div>
+    <p>The report and presentation contained numbers from a previous pipeline run that no longer matched the actual data:</p>
+    <table>
+      <thead><tr><th>Claim</th><th>Was</th><th>Corrected To</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Polls</td><td>421</td><td><strong>429</strong></td><td>polls_raw.csv row count</td></tr>
+        <tr><td>Articles</td><td>3,597</td><td><strong>3,634</strong></td><td>elpais_headlines_raw.csv row count</td></tr>
+        <tr><td>Press releases</td><td>63</td><td><strong>64</strong></td><td>immigration_statements.csv after dedup</td></tr>
+        <tr><td>PSOE Feb 2026</td><td>25.4%</td><td><strong>25.8%</strong></td><td>monthly_polls.csv: 25.79%</td></tr>
+        <tr><td>Cumulative decline</td><td>3.9 pp</td><td><strong>3.3 pp</strong></td><td>29.1% &minus; 25.8% = 3.3</td></tr>
+        <tr><td>Statements mean</td><td>4.2/month</td><td><strong>2.3/month</strong></td><td>descriptive_stats.csv after dedup</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge major">Major</span>
+    <strong>Demographics Map Bug (Script 05)</strong>
+    <div class="time">Fixed in scripts/05_visualizations.R</div>
+    <p>The map visualization tried to plot <code>foreign_pop</code> (a column that didn&rsquo;t exist in the long-format INE CSV). The data uses long format with columns <code>province, year, indicator, value</code>. Fixed to filter by <code>indicator == "unemployment_rate"</code> and use unemployment for the choropleth.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge major">Major</span>
+    <strong>Plot Ordering Dependency (main.R)</strong>
+    <div class="time">Fixed by adding step 6b in main.R</div>
+    <p>The scatter plot (<code>04_salience_scatter.png</code>) was never generated because Script 05 runs before Script 06, which creates <code>master_panel.csv</code>. The <code>file.exists()</code> check silently skipped the plot. Fixed by re-sourcing Script 05 after Script 06 completes.</p>
+  </div>
+</div>
+
+<h3>XPath and Course Technique Additions</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <span class="fix-badge new">New</span>
+    <strong>Added XPath to Script 01 (La Moncloa)</strong>
+    <div class="time">Replaced CSS selectors with XPath</div>
+    <p>Replaced <code>html_element("h1")</code> with <code>xml_find_first("//h1")</code>; replaced <code>html_elements(".body-text p")</code> with a 4-way XPath union using <code>contains()</code> and the <code>|</code> operator. Added <code>str_extract()</code> regex for date parsing.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge new">New</span>
+    <strong>Added XPath to Script 02 (Wikipedia)</strong>
+    <div class="time">New get_col_names() function</div>
+    <p>Rewrote the column name extraction function to use <code>xml_find_all(".//tr[1]/th")</code> with <code>xml_attr("alt")</code> fallback for image-based headers. This demonstrates the <code>img alt</code> trick taught in class.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge new">New</span>
+    <strong>Added XPath to Script 04 (El Pa&iacute;s)</strong>
+    <div class="time">Replaced CSS selectors with XPath</div>
+    <p>Replaced headline extraction with <code>xml_find_all("//h2 | //h3")</code> (union operator) and date extraction with <code>xml_find_all("//time[@datetime]")</code> (attribute selector).</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge new">New</span>
+    <strong>&ldquo;Course Techniques Applied&rdquo; Section (report.Rmd + presentation.Rmd)</strong>
+    <div class="time">New section added to both files</div>
+    <p>A 7-row table explicitly mapping each class technique (HTML table scraping, XPath, CSS selectors, regex, REST APIs, pagination, ethical scraping) to where it appears in the project with concrete code examples.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge new">New</span>
+    <strong>&ldquo;Challenges Encountered&rdquo; Section (report.Rmd)</strong>
+    <div class="time">New section in report</div>
+    <p>A 6-row table documenting what went wrong during development and how each challenge was solved. Shows problem-solving process, not just final results.</p>
+  </div>
+</div>
+
+<h3>Git and Repository Cleanup</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <span class="fix-badge minor">Minor</span>
+    <strong>.gitignore Created and Updated</strong>
+    <p>Created <code>.gitignore</code> to exclude: <code>.Rhistory</code>, <code>.RData</code>, <code>.DS_Store</code>, <code>report.html</code>, <code>presentation.html</code>, <code>README.html</code>, <code>libs/</code>, <code>presentation_files/</code>, and the <code> Data Harvesting/</code> class materials folder.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge minor">Minor</span>
+    <strong>README.md Fixes</strong>
+    <p>Fixed clone URL from placeholder to <code>ATadmuri-hub/Data-Harvesting-uc3m-2026.git</code>. Added missing plot entries (<code>04_salience_scatter.png</code>, <code>00_combined_summary.png</code>) to the output table.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge minor">Minor</span>
+    <strong>main.R Updated</strong>
+    <p>Added step 6b for plot ordering fix. Added missing INE output file messages to step 3.</p>
+  </div>
+
+  <div class="timeline-item">
+    <span class="fix-badge minor">Minor</span>
+    <strong>Presentation Code Snippets Updated</strong>
+    <p>The La Moncloa and Wikipedia slides showed old CSS selector code that no longer matched the actual scripts. Updated to show the XPath code that is actually used.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s14"><span class="step-num">14</span> Ethical Compliance</h2>
+
+<table>
+  <thead><tr><th>Requirement</th><th>Implementation</th></tr></thead>
+  <tbody>
+    <tr><td><strong>robots.txt</strong></td><td>Checked via <code>robotstxt</code> package before scraping La Moncloa (line 74&ndash;78 of Script 01)</td></tr>
+    <tr><td><strong>Polite delays</strong></td><td>Randomised <code>Sys.sleep(runif(1, 3, 5))</code> between page fetches; <code>runif(1, 0.5, 1.5)</code> between CDX queries</td></tr>
+    <tr><td><strong>User-Agent</strong></td><td>Standard browser User-Agent sent to all requests (La Moncloa blocks annotated UAs)</td></tr>
+    <tr><td><strong>Minimal requests</strong></td><td>Wikipedia fetched once (single page, bulk table extraction). CDX API is read-only. INE is public open data.</td></tr>
+    <tr><td><strong>No authentication bypass</strong></td><td>El Pa&iacute;s paywall is respected &mdash; only free headline metadata extracted, no article body content.</td></tr>
+    <tr><td><strong>Error handling</strong></td><td>All network calls use <code>tryCatch()</code> with <code>req_retry(max_tries = 3)</code> and graceful fallbacks</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="s15"><span class="step-num">15</span> Final Data Verification</h2>
+
+<p>After all fixes, the pipeline was re-run from scratch on March 9, 2026. Every output file was verified:</p>
+
+<table>
+  <thead><tr><th>File</th><th>Rows</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/raw/polls_raw.csv</code></td><td>429</td><td style="color: green;">&#10003; Matches report (429)</td></tr>
+    <tr><td><code>data/raw/elpais_headlines_raw.csv</code></td><td>3,634</td><td style="color: green;">&#10003; Matches report (3,634)</td></tr>
+    <tr><td><code>data/processed/immigration_statements.csv</code></td><td>64 (0 duplicates)</td><td style="color: green;">&#10003; Matches report (64)</td></tr>
+    <tr><td><code>data/processed/master_panel.csv</code></td><td>28 &times; 18</td><td style="color: green;">&#10003; Full panel, no gaps</td></tr>
+    <tr><td><code>data/processed/seat_monte_carlo.csv</code></td><td>15,000</td><td style="color: green;">&#10003; 5,000 per scenario</td></tr>
+    <tr><td><code>data/processed/descriptive_stats.csv</code></td><td>7</td><td style="color: green;">&#10003; Mean 2.29, Max 8</td></tr>
+    <tr><td><code>report.html</code></td><td>&mdash;</td><td style="color: green;">&#10003; Rendered clean, 81 chunks</td></tr>
+    <tr><td><code>presentation.html</code></td><td>&mdash;</td><td style="color: green;">&#10003; Rendered clean, 21 chunks</td></tr>
+    <tr><td>5 PNG plots</td><td>&mdash;</td><td style="color: green;">&#10003; All regenerated</td></tr>
+  </tbody>
+</table>
+
+<div class="box green">
+  <div class="box-title">Zero stale numbers remaining</div>
+  Searched all Rmd files for old values (421, 3597, 63, 25.4%, 3.9 pp). <strong>Zero matches found.</strong> All numbers in the report and presentation now match the actual data files exactly.
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s16"><span class="step-num">16</span> Key Findings</h2>
+
+<div class="box red">
+  <div class="box-title">Finding 1: PSOE Support in Persistent Decline</div>
+  PSOE support fell &minus;0.138 pp/month (OLS, p &lt; 0.001). Cumulative decline: <strong>3.3 pp</strong> from 29.1% (Nov 2023) to 25.8% (Feb 2026). The trend is robust across all model specifications (R&sup2; = 0.695&ndash;0.727).
+</div>
+
+<div class="box orange">
+  <div class="box-title">Finding 2: Media Immigration Salience Suppresses PSOE Support</div>
+  Pearson r = &minus;0.699 (p &lt; 0.001). Months with highest El Pa&iacute;s immigration coverage consistently coincide with lowest PSOE polling. Consistent with Petrocik&rsquo;s (1996) issue ownership theory: when immigration becomes salient, voters associate the issue with right-leaning parties (PP, Vox), not the governing left.
+</div>
+
+<div class="box blue">
+  <div class="box-title">Finding 3: La Moncloa Cannot Lead the Narrative</div>
+  Government immigration statements have zero predictive power for PSOE support. Granger test: F = 0.147, p = 0.864. Bivariate correlation between statements and PSOE is r = 0.074 (near-zero). No CCF lag exceeds the significance threshold. La Moncloa&rsquo;s communication is <em>reactive</em> (press release volume tracks media salience) rather than strategic.
+</div>
+
+<div class="box purple">
+  <div class="box-title">Finding 4: The January 2026 Regularisation Adds Zero Direct Voters</div>
+  All ~500,000 beneficiaries remain ineligible for national suffrage through 2027. Residency &ne; citizenship. The electoral consequence is entirely mediated via issue salience &mdash; which our model shows hurts PSOE.
+</div>
+
+<div class="box green">
+  <div class="box-title">Finding 5: 2027 Seat Projection</div>
+  PP 136&ndash;137 seats, PSOE ~120. PP + Vox coalition reaches majority (171 seats). PSOE + Sumar + Regional falls short (179 seats in best case). The regularisation debate itself is the swing variable &mdash; not the policy outcome.
+</div>
+
+<!-- ================================================================== -->
+<h2 id="s17"><span class="step-num">17</span> Reproducibility Instructions</h2>
+
+<p>The entire pipeline is fully reproducible. Patricia (or anyone) can clone the repository and regenerate all outputs from scratch:</p>
+
+<pre>
+<span class="comment"># 1. Clone the repository</span>
+git clone https://github.com/ATadmuri-hub/Data-Harvesting-uc3m-2026.git
+cd spain-immigration-project
+
+<span class="comment"># 2. Run the full pipeline (~25 minutes)</span>
+Rscript main.R
+
+<span class="comment"># 3. Render the HTML report</span>
+Rscript -e "rmarkdown::render('report.Rmd')"
+
+<span class="comment"># 4. Render the presentation</span>
+Rscript -e "rmarkdown::render('presentation.Rmd')"
+</pre>
+
+<p><strong>Requirements:</strong> R &ge; 4.3 with packages: <code>rvest</code>, <code>httr2</code>, <code>jsonlite</code>, <code>xml2</code>, <code>tidyverse</code>, <code>lubridate</code>, <code>stringr</code>, <code>sf</code>, <code>ggplot2</code>, <code>patchwork</code>, <code>scales</code>, <code>robotstxt</code>, <code>broom</code>, <code>lmtest</code>, <code>sandwich</code>, <code>forecast</code>, <code>zoo</code>, <code>plotly</code>, <code>kableExtra</code>, <code>ggcorrplot</code>, <code>rmarkdown</code>. Missing packages are auto-installed by <code>main.R</code>.</p>
+
+<p><strong>No API tokens required.</strong> No Selenium. No system dependencies beyond R. Internet access needed for the four web sources and the INE API.</p>
+
+<div class="box blue" style="margin-top: 2rem;">
+  <div class="box-title">Pipeline Verified</div>
+  All 8 scripts run end-to-end with no manual intervention. The full pipeline was re-run on March 9, 2026, with all outputs freshly generated and verified against the numbers in both the report and presentation. Zero inconsistencies remain.
+</div>
+
+<hr style="margin-top: 3rem; border: none; border-top: 2px solid var(--border);">
+<p style="text-align: center; color: #888; font-size: 0.85rem; margin-top: 1rem;">
+  UC3M &middot; Data Harvesting Course &middot; Spring 2026 &middot; Generated March 9, 2026
+</p>
+
+</body>
+</html>

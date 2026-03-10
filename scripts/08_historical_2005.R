@@ -114,9 +114,11 @@ clean_polls <- function(raw) {
 polls_cleaned <- clean_polls(raw_polls)
 
 # ─── 4. Fallback — Embedded Historical Data ───────────────────────────────────
-# If Wikipedia scraping fails or produces insufficient data, use digitised
-# values from the CIS Barometers and academic sources (Fraile & Lewis-Beck
-# 2014; Bara & Weale 2006). These values are from published barometer data.
+# WARNING: These embedded values are smoothed approximations, not raw poll data.
+# They were interpolated from CIS Barometer annual summaries and academic sources
+# (Fraile & Lewis-Beck 2014; Bara & Weale 2006). The smooth monthly trend may
+# artificially inflate ITS fit statistics. If this fallback is used, the ITS
+# results should be interpreted with strong caution. Always prefer scraped data.
 embedded_polls <- tribble(
   ~date,         ~psoe_pct, ~pp_pct,
   # 2004 — post-election baseline (PSOE won March 2004 election: 42.6%)

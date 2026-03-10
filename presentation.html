@@ -29,9 +29,9 @@ class: title-slide
   &lt;div class="title-divider"&gt;&lt;/div&gt;
   &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;28&lt;/span&gt;&lt;span class="title-stat-label"&gt;Months&lt;/span&gt;&lt;/div&gt;
   &lt;div class="title-divider"&gt;&lt;/div&gt;
-  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;421&lt;/span&gt;&lt;span class="title-stat-label"&gt;Polls&lt;/span&gt;&lt;/div&gt;
+  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;429&lt;/span&gt;&lt;span class="title-stat-label"&gt;Polls&lt;/span&gt;&lt;/div&gt;
   &lt;div class="title-divider"&gt;&lt;/div&gt;
-  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;3,597&lt;/span&gt;&lt;span class="title-stat-label"&gt;Articles&lt;/span&gt;&lt;/div&gt;
+  &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;3,634&lt;/span&gt;&lt;span class="title-stat-label"&gt;Articles&lt;/span&gt;&lt;/div&gt;
   &lt;div class="title-divider"&gt;&lt;/div&gt;
   &lt;div class="title-stat-block"&gt;&lt;span class="title-stat-num"&gt;11&lt;/span&gt;&lt;span class="title-stat-label"&gt;Figures&lt;/span&gt;&lt;/div&gt;
   &lt;div class="title-divider"&gt;&lt;/div&gt;
@@ -108,7 +108,7 @@ class: title-slide
 
 .stat-row[
 &lt;div class="stat-card red"&gt;&lt;span class="stat-num"&gt;29.1%&lt;/span&gt;&lt;span class="stat-label"&gt;PSOE — Nov 2023&lt;/span&gt;&lt;/div&gt;
-&lt;div class="stat-card blue"&gt;&lt;span class="stat-num"&gt;25.4%&lt;/span&gt;&lt;span class="stat-label"&gt;PSOE — Feb 2026&lt;/span&gt;&lt;/div&gt;
+&lt;div class="stat-card blue"&gt;&lt;span class="stat-num"&gt;25.8%&lt;/span&gt;&lt;span class="stat-label"&gt;PSOE — Feb 2026&lt;/span&gt;&lt;/div&gt;
 ]
 
 &lt;div class="box orange" style="margin-top:1em;"&gt;
@@ -133,9 +133,9 @@ class: title-slide
 
 | Hypothesis | Direction | Result |
 |:-----------|:---------:|:------:|
-| H1: Gov. statements → PSOE | Positive | **Not supported** (r = 0.047) |
-| H2: Media salience → PSOE | Negative | **Supported** (r = −0.674) |
-| H3: Time trend → PSOE | Negative | **Supported** (β = −0.138) |
+| H1: Gov. statements → PSOE | Positive | **Not supported** (r = 0.074) |
+| H2: Media salience → PSOE | Negative | **Supported** (r = −0.699) |
+| H3: Time trend → PSOE | Negative | **Supported** (β = −0.142) |
 
 ]
 
@@ -182,7 +182,7 @@ class: inverse, center, middle
 &lt;div class="pipeline-box b2"&gt;
 &lt;div class="pipeline-num"&gt;Source 02&lt;/div&gt;
 &lt;div class="pipeline-title"&gt;Wikipedia Opinion Polls&lt;/div&gt;
-&lt;div class="pipeline-detail"&gt;Spanish general election polling: PP, PSOE, Vox, Sumar across 421 polls from 47+ firms&lt;br&gt;&lt;br&gt;2023–2026&lt;/div&gt;
+&lt;div class="pipeline-detail"&gt;Spanish general election polling: PP, PSOE, Vox, Sumar across 429 polls from 47+ firms&lt;br&gt;&lt;br&gt;2023–2026&lt;/div&gt;
 &lt;span class="pipeline-tech"&gt;rvest html_table&lt;/span&gt;
 &lt;span class="pipeline-tech"&gt;regex cleaning&lt;/span&gt;
 &lt;span class="pipeline-tech"&gt;monthly agg.&lt;/span&gt;
@@ -200,7 +200,7 @@ class: inverse, center, middle
 &lt;div class="pipeline-box b4"&gt;
 &lt;div class="pipeline-num"&gt;Source 04&lt;/div&gt;
 &lt;div class="pipeline-title"&gt;El País Media Salience&lt;/div&gt;
-&lt;div class="pipeline-detail"&gt;Immigration topic-section headlines from El País; normalised 0–100 salience index&lt;br&gt;&lt;br&gt;3,597 articles&lt;/div&gt;
+&lt;div class="pipeline-detail"&gt;Immigration topic-section headlines from El País; normalised 0–100 salience index&lt;br&gt;&lt;br&gt;3,634 articles&lt;/div&gt;
 &lt;span class="pipeline-tech"&gt;Paginated scraping&lt;/span&gt;
 &lt;span class="pipeline-tech"&gt;polite delays&lt;/span&gt;
 &lt;span class="pipeline-tech"&gt;keyword filter&lt;/span&gt;
@@ -229,7 +229,7 @@ class: inverse, center, middle
 2. Live scraping of confirmed URLs extracts title, body text, word count, and date
 3. Body text matched against 25 immigration keywords to confirm relevance
 
-**Output:** 63 confirmed immigration press releases over 28 months (mean: 2.25/month, max: 8 in a single month)
+**Output:** 64 confirmed immigration press releases over 28 months (mean: 2.3/month, max: 8 in a single month)
 
 .muted[robots.txt checked via `robotstxt` package; polite 2–4 s delays applied]
 
@@ -260,13 +260,26 @@ cdx_resp &lt;- request(cdx_url) |&gt;
 urls &lt;- resp_body_json(cdx_resp) |&gt;
   map_chr(~ .x[[3]])  # column 3 = original URL
 
-# Stage 2 — Live HTML scraping
+# Stage 2 — Live HTML scraping (XPath)
 page &lt;- read_html(url)
-title &lt;- page |&gt; html_element("h1") |&gt;
-  html_text2()
-body  &lt;- page |&gt;
-  html_elements(".body-text p") |&gt;
-  html_text2() |&gt; paste(collapse = " ")
+
+# XPath: find &lt;h1&gt; anywhere in the DOM tree
+title &lt;- page |&gt;
+  xml_find_first("//h1") |&gt;
+  xml_text(trim = TRUE)
+
+# XPath union: try multiple body containers
+body_nodes &lt;- page |&gt;
+  xml_find_all(paste(
+    "//div[contains(@class,'noticia-texto')]//p",
+    "//div[contains(@class,'cuerpo-noticia')]//p",
+    "//article//p",
+    sep = " | "))
+body &lt;- xml_text(body_nodes) |&gt;
+  paste(collapse = " ")
+
+# Regex: extract date from URL slug
+date &lt;- str_extract(slug, "^\\d{6,8}")
 ```
 
 ]
@@ -287,7 +300,7 @@ body  &lt;- page |&gt;
 - Fieldwork dates span two rows → cleaned with `lubridate::dmy()`
 - 47+ polling firms with inconsistent name formatting → standardised
 
-**Output:** 421 polls → aggregated to 28 monthly averages
+**Output:** 429 polls → aggregated to 28 monthly averages
 
 ]
 
@@ -309,15 +322,22 @@ page &lt;- read_html(
     resp_body_string()
 )
 
-# Extract all wikitables (5 tables)
+# Extract all wikitables
 tables &lt;- page |&gt;
   html_elements("table.wikitable")
 
-# Parse and clean each table
-raw_polls &lt;- tables[[1]] |&gt;
-  html_table(fill = TRUE)
+# XPath: party names hidden in &lt;img alt&gt;
+header_ths &lt;- tables[[1]] |&gt;
+  xml_find_all(".//tr[1]/th")
+col_names &lt;- map_chr(header_ths, \(th) {
+  txt &lt;- xml_text(th, trim = TRUE)
+  if (nchar(txt) &gt; 0) return(txt)
+  # Fallback: image alt attribute
+  th |&gt; xml_find_first(".//img") |&gt;
+    xml_attr("alt") %|% "unknown"
+})
 
-# Extract % from range strings
+# Regex: extract % from range strings
 pct &lt;- str_extract(raw_polls$PSOE,
   "\\d+\\.?\\d*") |&gt; as.numeric()
 ```
@@ -412,7 +432,7 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
 
 .pull-left[
 
-&lt;table class="table" style="font-size: 12px; margin-left: auto; margin-right: auto;"&gt;
+&lt;table class="table" style="font-size: 12px; color: black; margin-left: auto; margin-right: auto;"&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(29, 53, 87, 255) !important;"&gt; Variable &lt;/th&gt;
@@ -428,8 +448,8 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
   &lt;tr&gt;
    &lt;td style="text-align:left;background-color: rgba(238, 243, 249, 255) !important;"&gt; PSOE (% voting intention) &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 27.17 &lt;/td&gt;
-   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 1.60 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 27.15 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 1.63 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 23.67 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 26.98 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 29.48 &lt;/td&gt;
@@ -437,8 +457,8 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
   &lt;tr&gt;
    &lt;td style="text-align:left;background-color: rgba(238, 243, 249, 255) !important;"&gt; PP (% voting intention) &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 30.27 &lt;/td&gt;
-   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 2.52 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 30.24 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 2.55 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 26.62 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 29.63 &lt;/td&gt;
    &lt;td style="text-align:right;background-color: rgba(238, 243, 249, 255) !important;"&gt; 35.21 &lt;/td&gt;
@@ -446,17 +466,17 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Vox (% voting intention) &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 12.88 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12.87 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 2.71 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 9.79 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 12.52 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 18.32 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 18.79 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Gov. immigration statements (count/month) &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 2.25 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 1.82 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.29 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.80 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 0.00 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 2.00 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 8.00 &lt;/td&gt;
@@ -464,19 +484,19 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; El País immigration volume (0–100 norm.) &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 61.76 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 22.73 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 62.39 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 23.04 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 24.50 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 63.45 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 67.30 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 100.00 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; El País immigration articles (raw count) &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 28 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 128.46 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 47.28 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 129.79 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 47.92 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 51.00 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 132.00 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 140.00 &lt;/td&gt;
    &lt;td style="text-align:right;"&gt; 208.00 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
@@ -499,12 +519,12 @@ unemp &lt;- fetch_ine("DATOS_TABLA/65349")
 
 &lt;div class="stat-row"&gt;
 &lt;div class="stat-card"&gt;&lt;span class="stat-num"&gt;28&lt;/span&gt;&lt;span class="stat-label"&gt;Monthly obs.&lt;/span&gt;&lt;/div&gt;
-&lt;div class="stat-card blue"&gt;&lt;span class="stat-num"&gt;421&lt;/span&gt;&lt;span class="stat-label"&gt;Polls scraped&lt;/span&gt;&lt;/div&gt;
+&lt;div class="stat-card blue"&gt;&lt;span class="stat-num"&gt;429&lt;/span&gt;&lt;span class="stat-label"&gt;Polls scraped&lt;/span&gt;&lt;/div&gt;
 &lt;/div&gt;
 
 &lt;div class="stat-row" style="margin-top:0.4em;"&gt;
-&lt;div class="stat-card orange"&gt;&lt;span class="stat-num"&gt;63&lt;/span&gt;&lt;span class="stat-label"&gt;Press releases&lt;/span&gt;&lt;/div&gt;
-&lt;div class="stat-card red"&gt;&lt;span class="stat-num"&gt;3,597&lt;/span&gt;&lt;span class="stat-label"&gt;Articles&lt;/span&gt;&lt;/div&gt;
+&lt;div class="stat-card orange"&gt;&lt;span class="stat-num"&gt;64&lt;/span&gt;&lt;span class="stat-label"&gt;Press releases&lt;/span&gt;&lt;/div&gt;
+&lt;div class="stat-card red"&gt;&lt;span class="stat-num"&gt;3,634&lt;/span&gt;&lt;span class="stat-label"&gt;Articles&lt;/span&gt;&lt;/div&gt;
 &lt;/div&gt;
 
 &lt;div class="box" style="margin-top:0.9em; font-size:0.88em;"&gt;
@@ -532,7 +552,7 @@ class: inverse, center, middle
 
 .pull-left[
 &lt;div class="box red" style="font-size:0.85em; margin-top:0.4em;"&gt;
-&lt;strong&gt;PSOE trend:&lt;/strong&gt; −0.138 pp/month (OLS, p &amp;lt; 0.001) · Cumulative fall: &lt;strong&gt;≈ 3.9 pp&lt;/strong&gt; over 28 months
+&lt;strong&gt;PSOE trend:&lt;/strong&gt; −0.142 pp/month (OLS, p &amp;lt; 0.001) · Cumulative observed fall: &lt;strong&gt;≈ 3.3 pp&lt;/strong&gt; over 28 months
 &lt;/div&gt;
 ]
 
@@ -555,12 +575,12 @@ class: inverse, center, middle
 .pull-right[
 
 &lt;div class="box red" style="margin-bottom:0.6em; margin-top:0.3em;"&gt;
-&lt;strong&gt;Pearson r = −0.674&lt;/strong&gt; (p &amp;lt; 0.001)&lt;br&gt;
+&lt;strong&gt;Pearson r = −0.699&lt;/strong&gt; (p &amp;lt; 0.001)&lt;br&gt;
 Months with highest immigration media coverage consistently coincide with lowest PSOE polling.
 &lt;/div&gt;
 
 &lt;div class="box orange" style="margin-bottom:0.7em;"&gt;
-&lt;strong&gt;OLS coefficient:&lt;/strong&gt; β = −0.015 (NW-robust p = 0.084) — marginal significance after controlling for time trend. Effect is real but partially mediated by the secular decline.
+&lt;strong&gt;OLS coefficient:&lt;/strong&gt; β = −0.014 (NW-robust p ≈ 0.10) — marginal significance after controlling for time trend. Effect is real but partially mediated by the secular decline.
 &lt;/div&gt;
 
 &lt;div class="box blue"&gt;
@@ -584,15 +604,15 @@ Months with highest immigration media coverage consistently coincide with lowest
 &lt;br&gt;
 
 &lt;div class="box red" style="margin-bottom:0.7em;"&gt;
-&lt;strong&gt;Consistently negative.&lt;/strong&gt; The rolling correlation never crosses zero &amp;mdash; the PSOE-salience relationship holds across the entire 28-month window, not just during peak salience months.
+&lt;strong&gt; Highly unstable.&lt;/strong&gt; The rolling correlation is initially  positive, however it  reverses sharply negative by Autumn 2024, recovers again to +0.75 in early 2025, before declining into persistent negative territory from mid-2025 onward.
 &lt;/div&gt;
 
 &lt;div class="box orange" style="margin-bottom:0.7em;"&gt;
-&lt;strong&gt;Deepening trend:&lt;/strong&gt; The correlation grows more negative toward Jan&amp;ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
+&lt;strong&gt;Deepening trend:&lt;/strong&gt; The correlation is negative toward Nov 2025, and stabilizes from Nov 2025&amp;ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
 &lt;/div&gt;
 
 &lt;div class="box blue"&gt;
-&lt;strong&gt;Implication:&lt;/strong&gt; This is a structural association &amp;mdash; not driven by a single event or outlier month. The issue ownership mechanism (Petrocik 1996) operates continuously.
+&lt;strong&gt;Implication:&lt;/strong&gt; The observation window is relatively short, which limits our ability to distinguish structural long-term effects from common temporal trends. As a result, the observed association may reflect a persistent relationship, but it could also be driven by broader time dynamics that affect both variables during the study period
 &lt;/div&gt;
 
 ]
@@ -607,12 +627,12 @@ Months with highest immigration media coverage consistently coincide with lowest
 
 | Predictor | F-stat | p-value | Verdict |
 |:----------|:------:|:-------:|:-------:|
-| Gov. statements | 0.147 | 0.864 | **No predictive power** |
-| Media salience | 0.304 | 0.741 | **No predictive power** |
+| Gov. statements | 0.138 | 0.872 | **No predictive power** |
+| Media salience | 0.342 | 0.714 | **No predictive power** |
 
 &lt;br&gt;
 
-**Cross-correlation peak:** Statements lead PSOE by 0 months (r = 0.047) — no lagged effect at any lag order 1–6.
+**Cross-correlation peak:** No lag exceeds the significance threshold (±0.377). The largest CCF value is at lag 3 (r = −0.297), still well below the bound. Bivariate Pearson r between statements and PSOE levels = 0.074 (near-zero).
 
 &lt;div class="box" style="margin-top:0.7em; font-size:0.88em;"&gt;
 &lt;strong&gt;Implication:&lt;/strong&gt; La Moncloa's communication strategy is &lt;em&gt;reactive&lt;/em&gt;, not strategic — press release volume responds to media salience, not the reverse.
@@ -625,12 +645,12 @@ Months with highest immigration media coverage consistently coincide with lowest
 &lt;br&gt;
 
 &lt;div class="box red" style="margin-bottom:0.8em;"&gt;
-&lt;strong&gt;Correlation: r = 0.047&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;Correlation: r = 0.074&lt;/strong&gt;&lt;br&gt;
 Government immigration statements are essentially uncorrelated with PSOE voting intention. The framing hypothesis (H1) is comprehensively rejected.
 &lt;/div&gt;
 
 &lt;div class="box orange" style="margin-bottom:0.8em;"&gt;
-&lt;strong&gt;Reactive vs strategic:&lt;/strong&gt; Press release count spikes correlate with media salience peaks (r = 0.42) — ministries respond to the news cycle, they do not create it.
+&lt;strong&gt;Reactive vs strategic:&lt;/strong&gt; Press release count shows weak positive correlation with media salience (r = 0.101) — ministries may respond to the news cycle, but the association is negligible.
 &lt;/div&gt;
 
 &lt;div class="box blue"&gt;
@@ -660,9 +680,9 @@ Government immigration statements are essentially uncorrelated with PSOE voting 
 
 &lt;div class="box" style="margin-top:0.6em; font-size:0.84em;"&gt;
 &lt;strong&gt;M3 coefficients (NW-robust):&lt;/strong&gt;&lt;br&gt;
-• Time trend: β = −0.138, p &amp;lt; 0.001 ★★★&lt;br&gt;
-• Gov. statements: β = +0.018, p = 0.864 (n.s.)&lt;br&gt;
-• Media salience: β = −0.015, p = 0.084 ·
+• Time trend: β = −0.142, p &amp;lt; 0.001 ★★★&lt;br&gt;
+• Gov. statements: β = −0.055, p = 0.674 (n.s.)&lt;br&gt;
+• Media salience: β = −0.014, p ≈ 0.10 ·
 &lt;/div&gt;
 
 &lt;div class="box orange" style="font-size:0.84em; margin-top:0.5em;"&gt;
@@ -686,7 +706,7 @@ class: inverse, center, middle
 
 .pull-left[
 &lt;div class="box red" style="font-size:0.84em; margin-top:0.3em;"&gt;
-&lt;strong&gt;June 2027:&lt;/strong&gt; Neutral ≈ 25.7% · High salience ≈ 25.5% · Low salience ≈ 26.1%
+&lt;strong&gt;June 2027:&lt;/strong&gt; Neutral ≈ 26.1% · High salience ≈ 25.8% · Low salience ≈ 26.5%
 &lt;/div&gt;
 ]
 .pull-right[
@@ -811,6 +831,24 @@ After the 2005 regularisation, PSOE's declining trend &lt;strong&gt;reversed&lt;
 ]
 
 ---
+
+# Course Techniques Applied
+
+| Technique | Where Used | Example |
+|:----------|:-----------|:--------|
+| **HTML table scraping** | Script 02 (Wikipedia) | `html_table(fill = TRUE)` on 5 wikitables |
+| **XPath expressions** | Scripts 01, 02, 04 | `xml_find_first("//h1")`, `xml_find_all("//div[contains(@class,'noticia-texto')]//p \| ...//p")` |
+| **CSS selectors** | Scripts 01–04 | `html_elements("table.wikitable")`, `html_element("time")` |
+| **Regex (stringr)** | All scripts | `str_extract(slug, "^\\d{6,8}")`, `str_detect(text, "inmigra")` |
+| **REST/JSON APIs** | Script 03 (INE) | `httr2::request()` → `resp_body_json()` → `jsonlite` parsing |
+| **Paginated scraping** | Scripts 01, 04 | Loop over CDX pages and El País `/noticias/inmigracion/N/` |
+| **Ethical scraping** | All scripts | `robotstxt` check, `Sys.sleep(3–5)`, standard User-Agent |
+
+&lt;div class="box green" style="margin-top:0.6em; font-size:0.86em;"&gt;
+&lt;strong&gt;All seven core Data Harvesting topics&lt;/strong&gt; appear at least once. XPath and CSS selectors are used side-by-side across all four data sources.
+&lt;/div&gt;
+
+---
 class: inverse, center, middle
 
 &lt;div class="section-label"&gt;Part IV&lt;/div&gt;
@@ -821,15 +859,17 @@ class: inverse, center, middle
 
 # Five Key Conclusions
 
-&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;1&lt;/div&gt;&lt;div&gt;&lt;strong&gt;PSOE support fell −0.138 pp/month throughout the Sánchez term&lt;/strong&gt; — a cumulative 3.9 pp decline from 29.1% (Nov 2023) to 25.4% (Feb 2026). The trend is robust across all model specifications (R² = 0.695–0.727).&lt;/div&gt;&lt;/div&gt;
+&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;1&lt;/div&gt;&lt;div&gt;&lt;strong&gt;PSOE support fell −0.142 pp/month throughout the Sánchez term&lt;/strong&gt; — a cumulative observed decline of ~3.3 pp from 29.1% (Nov 2023) to ~25.8% (Feb 2026). The trend is robust across all model specifications (adj. R² = 0.695–0.705).&lt;/div&gt;&lt;/div&gt;
 
-&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;2&lt;/div&gt;&lt;div&gt;&lt;strong&gt;Media immigration salience negatively predicts PSOE support&lt;/strong&gt; (r = −0.674, p &amp;lt; 0.001). Consistent with Petrocik's issue ownership theory: higher salience transfers issue ownership to PP and Vox.&lt;/div&gt;&lt;/div&gt;
+&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;2&lt;/div&gt;&lt;div&gt;&lt;strong&gt; Higher media attention to immigration is associated with lower support for the Spanish Socialist Workers' Party (r = −0.699, p &lt; 0.001). Consistent with the issue-ownership theory of John R. Petrocik, greater salience may shift the debate toward an issue where parties like the People's Party and Vox are seen as stronger.
+However, this pattern may partly reflect a shared time trend. After removing the trend, the effect becomes weaker and only marginally significant (p ≈ 0.10).&lt;/div&gt;&lt;/div&gt;
 
-&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;3&lt;/div&gt;&lt;div&gt;&lt;strong&gt;La Moncloa's immigration communication has zero predictive power&lt;/strong&gt;. Granger tests (F = 0.147, p = 0.864 for statements; F = 0.304, p = 0.741 for salience) confirm no lead-lag effect. The government reacts to the news cycle; it does not shape it.&lt;/div&gt;&lt;/div&gt;
+&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;3&lt;/div&gt;&lt;div&gt;&lt;strong&gt;La Moncloa's immigration communication has zero predictive power&lt;/strong&gt;. Granger tests (F = 0.138, p = 0.872 for statements; F = 0.342, p = 0.714 for salience) confirm no lead-lag effect. The government reacts to the news cycle; it does not shape it.&lt;/div&gt;&lt;/div&gt;
 
 &lt;div class="finding"&gt;&lt;div class="finding-num"&gt;4&lt;/div&gt;&lt;div&gt;&lt;strong&gt;The January 2026 regularisation adds zero direct voters&lt;/strong&gt;. All ~500,000 beneficiaries remain ineligible for national suffrage through 2027. Electoral consequences are entirely mediated via issue salience — which our model shows hurts PSOE.&lt;/div&gt;&lt;/div&gt;
 
-&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;5&lt;/div&gt;&lt;div&gt;&lt;strong&gt;2027 projection: PP 142–145 seats, PSOE 113–115.&lt;/strong&gt; PP majority probability ranges from 21.3% (low salience) to 71.7% (high salience). The regularisation debate itself is the swing variable — not the policy outcome.&lt;/div&gt;&lt;/div&gt;
+&lt;div class="finding"&gt;&lt;div class="finding-num"&gt;5&lt;/div&gt;&lt;div&gt;&lt;strong&gt;2027 projections place PP around 136–137 seats and PSOE around 120 seats. Immigration salience shifts the margin slightly (≈3 seats) but does not materially change coalition outcomes.&lt;/div&gt;&lt;/div&gt;
+
 
 ---
 

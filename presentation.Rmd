@@ -134,9 +134,9 @@ class: title-slide
   <div class="title-divider"></div>
   <div class="title-stat-block"><span class="title-stat-num">28</span><span class="title-stat-label">Months</span></div>
   <div class="title-divider"></div>
-  <div class="title-stat-block"><span class="title-stat-num">421</span><span class="title-stat-label">Polls</span></div>
+  <div class="title-stat-block"><span class="title-stat-num">429</span><span class="title-stat-label">Polls</span></div>
   <div class="title-divider"></div>
-  <div class="title-stat-block"><span class="title-stat-num">3,597</span><span class="title-stat-label">Articles</span></div>
+  <div class="title-stat-block"><span class="title-stat-num">3,634</span><span class="title-stat-label">Articles</span></div>
   <div class="title-divider"></div>
   <div class="title-stat-block"><span class="title-stat-num">11</span><span class="title-stat-label">Figures</span></div>
   <div class="title-divider"></div>
@@ -213,7 +213,7 @@ class: title-slide
 
 .stat-row[
 <div class="stat-card red"><span class="stat-num">29.1%</span><span class="stat-label">PSOE — Nov 2023</span></div>
-<div class="stat-card blue"><span class="stat-num">25.4%</span><span class="stat-label">PSOE — Feb 2026</span></div>
+<div class="stat-card blue"><span class="stat-num">25.8%</span><span class="stat-label">PSOE — Feb 2026</span></div>
 ]
 
 <div class="box orange" style="margin-top:1em;">
@@ -238,9 +238,9 @@ class: title-slide
 
 | Hypothesis | Direction | Result |
 |:-----------|:---------:|:------:|
-| H1: Gov. statements → PSOE | Positive | **Not supported** (r = 0.047) |
-| H2: Media salience → PSOE | Negative | **Supported** (r = −0.674) |
-| H3: Time trend → PSOE | Negative | **Supported** (β = −0.138) |
+| H1: Gov. statements → PSOE | Positive | **Not supported** (r = 0.074) |
+| H2: Media salience → PSOE | Negative | **Supported** (r = −0.699) |
+| H3: Time trend → PSOE | Negative | **Supported** (β = −0.142) |
 
 ]
 
@@ -287,7 +287,7 @@ class: inverse, center, middle
 <div class="pipeline-box b2">
 <div class="pipeline-num">Source 02</div>
 <div class="pipeline-title">Wikipedia Opinion Polls</div>
-<div class="pipeline-detail">Spanish general election polling: PP, PSOE, Vox, Sumar across 421 polls from 47+ firms<br><br>2023–2026</div>
+<div class="pipeline-detail">Spanish general election polling: PP, PSOE, Vox, Sumar across 429 polls from 47+ firms<br><br>2023–2026</div>
 <span class="pipeline-tech">rvest html_table</span>
 <span class="pipeline-tech">regex cleaning</span>
 <span class="pipeline-tech">monthly agg.</span>
@@ -305,7 +305,7 @@ class: inverse, center, middle
 <div class="pipeline-box b4">
 <div class="pipeline-num">Source 04</div>
 <div class="pipeline-title">El País Media Salience</div>
-<div class="pipeline-detail">Immigration topic-section headlines from El País; normalised 0–100 salience index<br><br>3,597 articles</div>
+<div class="pipeline-detail">Immigration topic-section headlines from El País; normalised 0–100 salience index<br><br>3,634 articles</div>
 <span class="pipeline-tech">Paginated scraping</span>
 <span class="pipeline-tech">polite delays</span>
 <span class="pipeline-tech">keyword filter</span>
@@ -334,7 +334,7 @@ class: inverse, center, middle
 2. Live scraping of confirmed URLs extracts title, body text, word count, and date
 3. Body text matched against 25 immigration keywords to confirm relevance
 
-**Output:** 63 confirmed immigration press releases over 28 months (mean: 2.25/month, max: 8 in a single month)
+**Output:** 64 confirmed immigration press releases over 28 months (mean: 2.3/month, max: 8 in a single month)
 
 .muted[robots.txt checked via `robotstxt` package; polite 2–4 s delays applied]
 
@@ -365,13 +365,26 @@ cdx_resp <- request(cdx_url) |>
 urls <- resp_body_json(cdx_resp) |>
   map_chr(~ .x[[3]])  # column 3 = original URL
 
-# Stage 2 — Live HTML scraping
+# Stage 2 — Live HTML scraping (XPath)
 page <- read_html(url)
-title <- page |> html_element("h1") |>
-  html_text2()
-body  <- page |>
-  html_elements(".body-text p") |>
-  html_text2() |> paste(collapse = " ")
+
+# XPath: find <h1> anywhere in the DOM tree
+title <- page |>
+  xml_find_first("//h1") |>
+  xml_text(trim = TRUE)
+
+# XPath union: try multiple body containers
+body_nodes <- page |>
+  xml_find_all(paste(
+    "//div[contains(@class,'noticia-texto')]//p",
+    "//div[contains(@class,'cuerpo-noticia')]//p",
+    "//article//p",
+    sep = " | "))
+body <- xml_text(body_nodes) |>
+  paste(collapse = " ")
+
+# Regex: extract date from URL slug
+date <- str_extract(slug, "^\\d{6,8}")
 ```
 
 ]
@@ -392,7 +405,7 @@ body  <- page |>
 - Fieldwork dates span two rows → cleaned with `lubridate::dmy()`
 - 47+ polling firms with inconsistent name formatting → standardised
 
-**Output:** 421 polls → aggregated to 28 monthly averages
+**Output:** 429 polls → aggregated to 28 monthly averages
 
 ]
 
@@ -414,15 +427,22 @@ page <- read_html(
     resp_body_string()
 )
 
-# Extract all wikitables (5 tables)
+# Extract all wikitables
 tables <- page |>
   html_elements("table.wikitable")
 
-# Parse and clean each table
-raw_polls <- tables[[1]] |>
-  html_table(fill = TRUE)
+# XPath: party names hidden in <img alt>
+header_ths <- tables[[1]] |>
+  xml_find_all(".//tr[1]/th")
+col_names <- map_chr(header_ths, \(th) {
+  txt <- xml_text(th, trim = TRUE)
+  if (nchar(txt) > 0) return(txt)
+  # Fallback: image alt attribute
+  th |> xml_find_first(".//img") |>
+    xml_attr("alt") %|% "unknown"
+})
 
-# Extract % from range strings
+# Regex: extract % from range strings
 pct <- str_extract(raw_polls$PSOE,
   "\\d+\\.?\\d*") |> as.numeric()
 ```
@@ -553,12 +573,12 @@ desc_stats |>
 
 <div class="stat-row">
 <div class="stat-card"><span class="stat-num">28</span><span class="stat-label">Monthly obs.</span></div>
-<div class="stat-card blue"><span class="stat-num">421</span><span class="stat-label">Polls scraped</span></div>
+<div class="stat-card blue"><span class="stat-num">429</span><span class="stat-label">Polls scraped</span></div>
 </div>
 
 <div class="stat-row" style="margin-top:0.4em;">
-<div class="stat-card orange"><span class="stat-num">63</span><span class="stat-label">Press releases</span></div>
-<div class="stat-card red"><span class="stat-num">3,597</span><span class="stat-label">Articles</span></div>
+<div class="stat-card orange"><span class="stat-num">64</span><span class="stat-label">Press releases</span></div>
+<div class="stat-card red"><span class="stat-num">3,634</span><span class="stat-label">Articles</span></div>
 </div>
 
 <div class="box" style="margin-top:0.9em; font-size:0.88em;">
@@ -604,7 +624,7 @@ ggplot(panel_long, aes(year_month, support, colour = Party)) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "3 months") +
   scale_y_continuous(labels = function(x) paste0(x, "%"), limits = c(8, 38)) +
   labs(title = "Voting Intention: PSOE, PP and Vox — Nov 2023 to Feb 2026",
-       subtitle = "Monthly averages from 421 polls · Dashed line = OLS trend for PSOE",
+       subtitle = "Monthly averages from 429 polls · Dashed line = OLS trend for PSOE",
        x = NULL, y = "Vote intention (%)", colour = NULL) +
   theme(legend.position = "right",
         legend.text = element_text(size = 9))
@@ -612,7 +632,7 @@ ggplot(panel_long, aes(year_month, support, colour = Party)) +
 
 .pull-left[
 <div class="box red" style="font-size:0.85em; margin-top:0.4em;">
-<strong>PSOE trend:</strong> −0.138 pp/month (OLS, p &lt; 0.001) · Cumulative fall: <strong>≈ 3.9 pp</strong> over 28 months
+<strong>PSOE trend:</strong> −0.142 pp/month (OLS, p &lt; 0.001) · Cumulative observed fall: <strong>≈ 3.3 pp</strong> over 28 months
 </div>
 ]
 
@@ -648,7 +668,7 @@ ggplot(panel_col, aes(imm_volume_norm, psoe_avg)) +
   scale_x_continuous(labels = function(x) paste0(x)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   labs(title = "El País Salience vs PSOE Support",
-       subtitle = "Each point = one month   ·   r = −0.674",
+       subtitle = paste0("Each point = one month   ·   r = ", round(cor(panel_col$imm_volume_norm, panel_col$psoe_avg, use = "complete.obs"), 3)),
        x = "Immigration salience (0–100 norm.)",
        y = "PSOE vote intention (%)",
        colour = NULL) +
@@ -661,12 +681,12 @@ ggplot(panel_col, aes(imm_volume_norm, psoe_avg)) +
 .pull-right[
 
 <div class="box red" style="margin-bottom:0.6em; margin-top:0.3em;">
-<strong>Pearson r = −0.674</strong> (p &lt; 0.001)<br>
+<strong>Pearson r = −0.699</strong> (p &lt; 0.001)<br>
 Months with highest immigration media coverage consistently coincide with lowest PSOE polling.
 </div>
 
 <div class="box orange" style="margin-bottom:0.7em;">
-<strong>OLS coefficient:</strong> β = −0.015 (NW-robust p = 0.084) — marginal significance after controlling for time trend. Effect is real but partially mediated by the secular decline.
+<strong>OLS coefficient:</strong> β = −0.014 (NW-robust p ≈ 0.10) — marginal significance after controlling for time trend. Effect is real but partially mediated by the secular decline.
 </div>
 
 <div class="box blue">
@@ -723,15 +743,15 @@ ggplot(roll_data |> filter(!is.na(roll_corr)),
 <br>
 
 <div class="box red" style="margin-bottom:0.7em;">
-<strong>Consistently negative.</strong> The rolling correlation never crosses zero &mdash; the PSOE-salience relationship holds across the entire 28-month window, not just during peak salience months.
+<strong> Highly unstable.</strong> The rolling correlation is initially  positive, however it  reverses sharply negative by Autumn 2024, recovers again to +0.75 in early 2025, before declining into persistent negative territory from mid-2025 onward.
 </div>
 
 <div class="box orange" style="margin-bottom:0.7em;">
-<strong>Deepening trend:</strong> The correlation grows more negative toward Jan&ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
+<strong>Deepening trend:</strong> The correlation is negative toward Nov 2025, and stabilizes from Nov 2025&ndash;Feb 2026 (regularisation debate), suggesting the relationship strengthens as the issue intensifies.
 </div>
 
 <div class="box blue">
-<strong>Implication:</strong> This is a structural association &mdash; not driven by a single event or outlier month. The issue ownership mechanism (Petrocik 1996) operates continuously.
+<strong>Implication:</strong> The observation window is relatively short, which limits our ability to distinguish structural long-term effects from common temporal trends. As a result, the observed association may reflect a persistent relationship, but it could also be driven by broader time dynamics that affect both variables during the study period
 </div>
 
 ]
@@ -746,12 +766,12 @@ ggplot(roll_data |> filter(!is.na(roll_corr)),
 
 | Predictor | F-stat | p-value | Verdict |
 |:----------|:------:|:-------:|:-------:|
-| Gov. statements | 0.147 | 0.864 | **No predictive power** |
-| Media salience | 0.304 | 0.741 | **No predictive power** |
+| Gov. statements | 0.138 | 0.872 | **No predictive power** |
+| Media salience | 0.342 | 0.714 | **No predictive power** |
 
 <br>
 
-**Cross-correlation peak:** Statements lead PSOE by 0 months (r = 0.047) — no lagged effect at any lag order 1–6.
+**Cross-correlation peak:** No lag exceeds the significance threshold (±0.377). The largest CCF value is at lag 3 (r = −0.297), still well below the bound. Bivariate Pearson r between statements and PSOE levels = 0.074 (near-zero).
 
 <div class="box" style="margin-top:0.7em; font-size:0.88em;">
 <strong>Implication:</strong> La Moncloa's communication strategy is <em>reactive</em>, not strategic — press release volume responds to media salience, not the reverse.
@@ -764,12 +784,12 @@ ggplot(roll_data |> filter(!is.na(roll_corr)),
 <br>
 
 <div class="box red" style="margin-bottom:0.8em;">
-<strong>Correlation: r = 0.047</strong><br>
+<strong>Correlation: r = 0.074</strong><br>
 Government immigration statements are essentially uncorrelated with PSOE voting intention. The framing hypothesis (H1) is comprehensively rejected.
 </div>
 
 <div class="box orange" style="margin-bottom:0.8em;">
-<strong>Reactive vs strategic:</strong> Press release count spikes correlate with media salience peaks (r = 0.42) — ministries respond to the news cycle, they do not create it.
+<strong>Reactive vs strategic:</strong> Press release count shows weak positive correlation with media salience (r = 0.101) — ministries may respond to the news cycle, but the association is negligible.
 </div>
 
 <div class="box blue">
@@ -830,9 +850,9 @@ ggplot(mc, aes(r.squared, short_name, fill = best)) +
 
 <div class="box" style="margin-top:0.6em; font-size:0.84em;">
 <strong>M3 coefficients (NW-robust):</strong><br>
-• Time trend: β = −0.138, p &lt; 0.001 ★★★<br>
-• Gov. statements: β = +0.018, p = 0.864 (n.s.)<br>
-• Media salience: β = −0.015, p = 0.084 ·
+• Time trend: β = −0.142, p &lt; 0.001 ★★★<br>
+• Gov. statements: β = −0.055, p = 0.674 (n.s.)<br>
+• Media salience: β = −0.014, p ≈ 0.10 ·
 </div>
 
 <div class="box orange" style="font-size:0.84em; margin-top:0.5em;">
@@ -1127,6 +1147,24 @@ After the 2005 regularisation, PSOE's declining trend <strong>reversed</strong>:
 ]
 
 ---
+
+# Course Techniques Applied
+
+| Technique | Where Used | Example |
+|:----------|:-----------|:--------|
+| **HTML table scraping** | Script 02 (Wikipedia) | `html_table(fill = TRUE)` on 5 wikitables |
+| **XPath expressions** | Scripts 01, 02, 04 | `xml_find_first("//h1")`, `xml_find_all("//div[contains(@class,'noticia-texto')]//p \| ...//p")` |
+| **CSS selectors** | Scripts 01–04 | `html_elements("table.wikitable")`, `html_element("time")` |
+| **Regex (stringr)** | All scripts | `str_extract(slug, "^\\d{6,8}")`, `str_detect(text, "inmigra")` |
+| **REST/JSON APIs** | Script 03 (INE) | `httr2::request()` → `resp_body_json()` → `jsonlite` parsing |
+| **Paginated scraping** | Scripts 01, 04 | Loop over CDX pages and El País `/noticias/inmigracion/N/` |
+| **Ethical scraping** | All scripts | `robotstxt` check, `Sys.sleep(3–5)`, standard User-Agent |
+
+<div class="box green" style="margin-top:0.6em; font-size:0.86em;">
+<strong>All seven core Data Harvesting topics</strong> appear at least once. XPath and CSS selectors are used side-by-side across all four data sources.
+</div>
+
+---
 class: inverse, center, middle
 
 <div class="section-label">Part IV</div>
@@ -1137,15 +1175,17 @@ class: inverse, center, middle
 
 # Five Key Conclusions
 
-<div class="finding"><div class="finding-num">1</div><div><strong>PSOE support fell −0.138 pp/month throughout the Sánchez term</strong> — a cumulative 3.9 pp decline from 29.1% (Nov 2023) to 25.4% (Feb 2026). The trend is robust across all model specifications (R² = 0.695–0.727).</div></div>
+<div class="finding"><div class="finding-num">1</div><div><strong>PSOE support fell −0.142 pp/month throughout the Sánchez term</strong> — a cumulative observed decline of ~3.3 pp from 29.1% (Nov 2023) to ~25.8% (Feb 2026). The trend is robust across all model specifications (adj. R² = 0.695–0.705).</div></div>
 
-<div class="finding"><div class="finding-num">2</div><div><strong>Media immigration salience negatively predicts PSOE support</strong> (r = −0.674, p &lt; 0.001). Consistent with Petrocik's issue ownership theory: higher salience transfers issue ownership to PP and Vox.</div></div>
+<div class="finding"><div class="finding-num">2</div><div><strong> Higher media attention to immigration is associated with lower support for the Spanish Socialist Workers' Party (r = −0.699, p < 0.001). Consistent with the issue-ownership theory of John R. Petrocik, greater salience may shift the debate toward an issue where parties like the People's Party and Vox are seen as stronger.
+However, this pattern may partly reflect a shared time trend. After removing the trend, the effect becomes weaker and only marginally significant (p ≈ 0.10).</div></div>
 
-<div class="finding"><div class="finding-num">3</div><div><strong>La Moncloa's immigration communication has zero predictive power</strong>. Granger tests (F = 0.147, p = 0.864 for statements; F = 0.304, p = 0.741 for salience) confirm no lead-lag effect. The government reacts to the news cycle; it does not shape it.</div></div>
+<div class="finding"><div class="finding-num">3</div><div><strong>La Moncloa's immigration communication has zero predictive power</strong>. Granger tests (F = 0.138, p = 0.872 for statements; F = 0.342, p = 0.714 for salience) confirm no lead-lag effect. The government reacts to the news cycle; it does not shape it.</div></div>
 
 <div class="finding"><div class="finding-num">4</div><div><strong>The January 2026 regularisation adds zero direct voters</strong>. All ~500,000 beneficiaries remain ineligible for national suffrage through 2027. Electoral consequences are entirely mediated via issue salience — which our model shows hurts PSOE.</div></div>
 
-<div class="finding"><div class="finding-num">5</div><div><strong>2027 projection: PP 142–145 seats, PSOE 113–115.</strong> PP majority probability ranges from 21.3% (low salience) to 71.7% (high salience). The regularisation debate itself is the swing variable — not the policy outcome.</div></div>
+<div class="finding"><div class="finding-num">5</div><div><strong>2027 projections place PP around 136–137 seats and PSOE around 120 seats. Immigration salience shifts the margin slightly (≈3 seats) but does not materially change coalition outcomes.</div></div>
+
 
 ---
 

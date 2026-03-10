@@ -20,6 +20,7 @@
 
 library(rvest)
 library(httr2)
+library(xml2)
 library(tidyverse)
 library(lubridate)
 library(robotstxt)
@@ -140,8 +141,8 @@ for (min_ in MINISTRIES) {
   }
 }
 
-# Normalise and deduplicate
-all_cdx_urls <- unique(all_cdx_urls)
+# Normalise and deduplicate (case-insensitive: CDX returns /Paginas/ and /paginas/ variants)
+all_cdx_urls <- all_cdx_urls[!duplicated(tolower(all_cdx_urls))]
 
 # Keep only .aspx article pages (no query strings, no index pages)
 # Note: CDX returns actual archived URLs which may use lowercase /paginas/ even
@@ -175,12 +176,13 @@ parse_url_meta <- function(url) {
   min_idx  <- which(tolower(parts) == "notasprensa") + 1
   min_     <- if (length(min_idx) > 0) parts[min_idx[1]] else NA_character_
 
-  # Parse date from slug prefix.
+  # Parse date from slug prefix using str_extract() with regex.
   # La Moncloa slugs use DDMMYY (6-digit) or DDMMYYYY (8-digit) formats,
   # e.g. "151223-marlaska-canarias.aspx" = 15 Dec 2023, "29072024-..." = 29 Jul 2024.
-  # lubridate::dmy() handles both formats; for 2-digit years it assumes 2000+.
-  date_match <- regmatches(slug, regexpr("^(\\d{6}|\\d{8})", slug))
-  date_ <- if (length(date_match) > 0 && nchar(date_match) %in% c(6L, 8L)) {
+  # The regex "^\\d{6,8}" anchors at the start of the slug (^) and matches
+  # 6 to 8 consecutive digits. lubridate::dmy() handles both formats.
+  date_match <- str_extract(slug, "^\\d{6,8}")
+  date_ <- if (!is.na(date_match) && nchar(date_match) %in% c(6L, 8L)) {
     suppressWarnings(dmy(date_match))
   } else {
     NA_Date_
@@ -238,25 +240,33 @@ fetch_release <- function(url) {
 
   if (is.null(page)) return(list(title = NA_character_, full_text = NA_character_))
 
-  # Title — La Moncloa uses <h1> or <title>
+  # Title — use XPath to find <h1> anywhere in the document tree.
+  # La Moncloa pages use varying structures: sometimes the title is inside
+  # an article header, sometimes directly under <body>. XPath's "//" descendant
+  # axis handles this without knowing the exact nesting.
   title <- page |>
-    html_element("h1.article-header__title, h1, .titulo-noticia") |>
-    html_text(trim = TRUE)
+    xml_find_first("//h1") |>
+    xml_text(trim = TRUE)
   if (is.na(title) || nchar(title) < 3) {
-    title <- page |> html_element("title") |> html_text(trim = TRUE)
+    title <- page |> xml_find_first("//title") |> xml_text(trim = TRUE)
     title <- sub("\\s*-\\s*La Moncloa.*$", "", title)
   }
 
-  # Body text
-  text <- page |>
-    html_elements(".noticia-texto p, .cuerpo-noticia p, article p, main p") |>
-    html_text(trim = TRUE) |>
+  # Body text — XPath union to select <p> elements from multiple possible
+  # container classes. The "|" operator in XPath combines node-sets, equivalent
+  # to CSS comma-separated selectors but with explicit path control.
+  text_nodes <- page |>
+    xml_find_all(
+      "//div[contains(@class,'noticia-texto')]//p | //div[contains(@class,'cuerpo-noticia')]//p | //article//p | //main//p"
+    )
+  text <- text_nodes |>
+    xml_text(trim = TRUE) |>
     (\(x) x[nchar(x) > 20])() |>
     paste(collapse = " ") |>
     str_squish()
 
   if (nchar(text) < 50) {
-    text <- page |> html_elements("p") |> html_text(trim = TRUE) |>
+    text <- page |> xml_find_all("//p") |> xml_text(trim = TRUE) |>
       (\(x) x[nchar(x) > 20])() |>
       paste(collapse = " ") |> str_squish()
   }

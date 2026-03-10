@@ -221,27 +221,31 @@ if (nrow(demographics) > 0 && !"note" %in% colnames(demographics)) {
     spain_map <- spain_map |>
       mutate(province_key = normalise_prov(name))
 
+    # Demographics CSV is long-format: province, year, indicator, value.
+    # Extract unemployment data per province (most recent year) for the map.
     latest_demog <- demographics |>
-      filter(!is.na(foreign_pop)) |>
+      filter(indicator == "unemployment_rate", !is.na(province), province != "Total Nacional") |>
+      mutate(province_key = normalise_prov(province)) |>
       group_by(province_key) |>
       slice_max(year, n = 1) |>
-      ungroup()
+      ungroup() |>
+      rename(unemployment_rate = value)
 
     map_data <- spain_map |>
       left_join(latest_demog, by = "province_key")
 
     p2 <- ggplot(map_data) +
-      geom_sf(aes(fill = foreign_pop / 1000), colour = "white", linewidth = 0.3) +
+      geom_sf(aes(fill = unemployment_rate), colour = "white", linewidth = 0.3) +
       scale_fill_gradientn(
         colours  = c("#f7f7f7", "#fdae6b", "#e6550d", "#a63603"),
-        name     = "Foreign-born\npopulation (thousands)",
+        name     = "Unemployment\nrate (%)",
         na.value = "grey80",
-        labels   = label_comma()
+        labels   = label_number(suffix = "%")
       ) +
       labs(
-        title    = "Foreign-Born Population by Province (Latest Available Year)",
-        subtitle = "Provinces with higher foreign-born populations are hypothesised to\nreact more strongly to official immigration discourse",
-        caption  = "Source: INE Padrón Municipal"
+        title    = "Provincial Unemployment Rate (Latest Available Year)",
+        subtitle = "Higher unemployment provinces may be more sensitive to immigration\nrhetoric and labour market competition narratives",
+        caption  = "Source: INE EPA Table 65349"
       ) +
       theme_void() +
       theme(

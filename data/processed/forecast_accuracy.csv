@@ -1,5 +1,5 @@
 model,RMSE,MAE,ME,MAPE
-ARIMA (dynamic regression),0.508,0.447,-0.234,1.74
-ETS (exponential smoothing),0.867,0.684,0.276,2.62
-ARIMA (in-sample residuals),0.91,0.693,-0.098,2.6
-ETS (in-sample residuals),0.937,0.711,-0.167,2.69
+ARIMA (dynamic regression),0.517,0.438,-0.189,1.7
+ETS (exponential smoothing),0.967,0.865,0.257,3.34
+ARIMA (in-sample residuals),0.91,0.68,-0.082,2.55
+ETS (in-sample residuals),0.957,0.747,-0.177,2.83

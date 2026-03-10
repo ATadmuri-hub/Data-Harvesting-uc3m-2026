@@ -243,9 +243,9 @@ stopifnot(
       <div class="cover-stat-divider"></div>
       <div class="cover-stat"><span class="stat-num">28</span><span class="stat-label">Months</span></div>
       <div class="cover-stat-divider"></div>
-      <div class="cover-stat"><span class="stat-num">421</span><span class="stat-label">Polls</span></div>
+      <div class="cover-stat"><span class="stat-num">429</span><span class="stat-label">Polls</span></div>
       <div class="cover-stat-divider"></div>
-      <div class="cover-stat"><span class="stat-num">3,597</span><span class="stat-label">Articles</span></div>
+      <div class="cover-stat"><span class="stat-num">3,634</span><span class="stat-label">Articles</span></div>
       <div class="cover-stat-divider"></div>
       <div class="cover-stat"><span class="stat-num">11</span><span class="stat-label">Figures</span></div>
       <div class="cover-stat-divider"></div>
@@ -264,9 +264,9 @@ This report presents a reproducible data-harvesting and statistical analysis of 
 
 **Core findings:**
 
-> 1. **PSOE support declined** at −0.138 percentage points per month (Model M3 R² = 0.727; trend coefficient p < 0.001), a cumulative fall of approximately **3.9 pp** from ~29% to ~25% over 28 months.
-> 2. **Immigration media salience is negatively correlated with PSOE support** (r = −0.674): months with higher El País immigration coverage consistently coincide with lower PSOE polling ,consistent with issue-ownership theory (Petrocik, 1996).
-> 3. **Government immigration press releases do not predict PSOE polling**, at either contemporaneous or lead/lag levels. Granger causality tests (order = 2) confirm this for both immigration statements (F = 0.147, p = 0.864) and immigration media salience (F = 0.304, p = 0.741). La Moncloa's communication strategy is reactive, not strategic.
+> 1. **PSOE support declined** at −0.142 percentage points per month (Model M3 R² = 0.737; trend coefficient p < 0.001), a cumulative observed fall of approximately **3.3 pp** from ~29.1% to ~25.8% over 28 months.
+> 2. **Immigration media salience is negatively correlated with PSOE support** (r = −0.699): months with higher El País immigration coverage consistently coincide with lower PSOE polling ,consistent with issue-ownership theory (Petrocik, 1996), though a shared time trend may partly drive this correlation.
+> 3. **Government immigration press releases do not predict PSOE polling**, at either contemporaneous or lead/lag levels. Granger causality tests (order = 2) confirm this for both immigration statements (F = 0.138, p = 0.872) and immigration media salience (F = 0.342, p = 0.714). La Moncloa's communication strategy is reactive, not strategic.
 > 4. **The January 2026 regularisation law** (targeting ~500,000 undocumented migrants) adds **zero direct new voters** to the 2027 General Election electorate due to Spanish citizenship requirements for national suffrage. Its electoral consequences are entirely through issue salience and partisan mobilization.
 > 5. **2027 PSOE forecast**: The `r arima_order_label`-X model projects PSOE at **`r fc_range_low`–`r fc_range_high`%** by June 2027 across all three salience scenarios (95% CI: ±7 pp), with PP maintaining a 5–8 pp lead. The dominant predictor is time trend, not immigration salience.
 
@@ -280,6 +280,10 @@ On 17 November 2023, Pedro Sánchez secured a second term as Prime Minister in a
 
 This period makes Spain an ideal case for studying how governing-party communication about politically contested issues interacts with electoral support in a fragmented multi-party system.
 
+## Theory
+
+Issue ownership theory, developed by John R. Petrocik, argues that political parties gain reputations for being more competent on certain policy issues. When those issues become more prominent in public debate, voters tend to favor the parties they associate with them. In Spain, immigration is often perceived as an issue where the People's Party and Vox are viewed by some voters as stronger than the Spanish Socialist Workers' Party. This project tests whether increased media attention to immigration is associated with shifts in party support and projected electoral outcomes.
+
 ## Research Question
 
 > **Does the frequency of official government immigration statements correlate with shifts in PSOE electoral support over the 2023–2026 governing period, and can historical data produce a credible forecast of PSOE's position entering the 2027 General Election?**
@@ -289,9 +293,9 @@ This period makes Spain an ideal case for studying how governing-party communica
 ```{r hypotheses-table, echo=FALSE}
 tribble(
   ~Hypothesis, ~Direction,       ~Rationale,                                              ~Outcome,
-  "H1: Gov. statements → PSOE",  "Positive",  "Proactive issue framing may reassure centrist voters worried about immigration", "Not supported (r = 0.047, p = 0.864)",
-  "H2: Media salience → PSOE",   "Negative",  "Immigration salience benefits right-leaning parties via issue ownership", "Partially supported: Pearson r = −0.674 (p < 0.001); OLS coefficient marginal (β = −0.015, p = 0.084, NW robust)",
-  "H3: Time trend → PSOE",       "Negative",  "Mid-term governmental attrition is common in democratic systems", "Supported (β = −0.138, p < 0.001)"
+  "H1: Gov. statements → PSOE",  "Positive",  "Proactive issue framing may reassure centrist voters worried about immigration", "Not supported (r = 0.074; Granger F = 0.138, p = 0.872)",
+  "H2: Media salience → PSOE",   "Negative",  "Immigration salience benefits right-leaning parties via issue ownership", "Partially supported: Pearson r = −0.699 (p < 0.001); OLS coefficient marginal (β = −0.014, p ≈ 0.10, NW robust)",
+  "H3: Time trend → PSOE",       "Negative",  "Mid-term governmental attrition is common in democratic systems", "Supported (β = −0.142, p < 0.001)"
 ) |>
   kbl_proj(
     caption = "Table 1. Research hypotheses and outcomes",
@@ -315,10 +319,10 @@ This project harvests four independent data streams using distinct techniques ,e
 ```{r data-overview-table, echo=FALSE}
 tribble(
   ~Source,                  ~Method,                  ~`Key challenge`,                  ~`Records collected`,
-  "La Moncloa (press releases)", "Wayback Machine CDX API → `rvest` live fetch", "JS-rendered index invisible to HTTP scraping",   "63 immigration releases (1,078 CDX URLs discovered)",
-  "Wikipedia (opinion polls)",   "`rvest` + `img alt` trick",                  "Party names are images, not text in column headers", "421 individual polls → 28 monthly averages",
+  "La Moncloa (press releases)", "Wayback Machine CDX API → `rvest` live fetch", "JS-rendered index invisible to HTTP scraping",   "64 immigration releases (647 CDX URLs discovered)",
+  "Wikipedia (opinion polls)",   "`rvest` + `img alt` trick",                  "Party names are images, not text in column headers", "429 individual polls → 28 monthly averages",
   "INE Statistical API",         "`httr2` + `jsonlite` REST/JSON",             "Volume restrictions on filtered endpoints",          "212 province × year records; 5 years foreign pop.",
-  "El País (media salience)",    "`rvest` paginated topic scraping",           "General search returns 404; pagination uses `/N/`",  "3,597 immigration articles (28 months)"
+  "El País (media salience)",    "`rvest` paginated topic scraping",           "General search returns 404; pagination uses `/N/`",  "3,634 immigration articles (28 months)"
 ) |>
   kbl_proj(
     caption = "Table 2. Data source overview",
@@ -586,7 +590,7 @@ dates <- ymd_hms(times, tz = "Europe/Madrid")  # parse with lubridate
 
 We construct **`imm_volume_norm`** ,a 0–100 normalised monthly immigration article count:
 
-$$\text{imm\_volume\_norm}_t = \frac{n_{\text{immigration},t}}{\max_s(n_{\text{immigration},s})} \times 100$$
+$$\texttt{imm\\_volume\\_norm}_{t} = \frac{n_{\text{immigration},\,t}}{\max_{s}\!\left(n_{\text{immigration},\,s}\right)} \times 100$$
 
 This is preferred over the raw ratio `n_immigration / n_total` because the general España section pagination is limited and may not reach back the full 28 months, making the denominator unreliable. The normalised volume is bounded, interpretable, and fully reproducible.
 
@@ -613,8 +617,8 @@ salience |>
 ```{r data-quality, echo=FALSE}
 tribble(
   ~Source,                   ~`Expected months`, ~`Months with data`, ~`Completeness`,  ~`Validation`,
-  "La Moncloa press releases",   "28", "23 (≥1 release)",   "82%",  "Body-text keyword confirmation; 63 total releases",
-  "Wikipedia opinion polls",     "28", "28",                 "100%", "Distinct(pollster, date) deduplication; 421 polls",
+  "La Moncloa press releases",   "28", "24 (≥1 release)",   "86%",  "Body-text keyword confirmation; case-insensitive URL dedup; 64 unique releases",
+  "Wikipedia opinion polls",     "28", "28",                 "100%", "Distinct(pollster, date) deduplication; 429 polls",
   "INE EPA unemployment",        "28", "12 (quarterly → annual)", "100% of years", "Province name extraction via regex",
   "El País immigration volume",  "28", "28",                 "100%", "Date range filter; ISO 8601 parsing"
 ) |>
@@ -623,6 +627,33 @@ tribble(
     align   = c("l","c","c","c","l")
   )
 ```
+
+## Course Techniques Applied
+
+This project applies the core data harvesting methods covered across the six-week curriculum:
+
+| Course Topic | Class Technique | Project Application |
+|-------------|----------------|---------------------|
+| **HTML table scraping** (Ch. 2–3) | `html_table()`, `select()`, `pivot_longer()` | Wikipedia opinion poll parsing (Script 02); INE data wrangling |
+| **XPath expressions** (Ch. 4–5) | `xml_find_all()`, `xml_attr()`, `xml_text()`, descendant axes (`//`), attribute predicates (`[@attr]`) | La Moncloa title/body extraction with XPath union; Wikipedia `img/@alt` attribute trick for party names; El País `//time[@datetime]` for ISO 8601 dates |
+| **CSS selectors** (Ch. 2–3) | `html_elements()`, `html_element()` | Wikipedia `table.wikitable` extraction; El País `h2, h3` headline selection |
+| **Regular expressions** (Ch. 4) | `str_extract()`, `str_detect()`, `str_replace_all()` | La Moncloa slug date parsing (`"^\\d{6,8}"`); URL slug keyword matching with partial-match patterns (e.g., `inmigraci` matches both *inmigración* and *inmigrantes*); Wikipedia fieldwork date range parsing; poll percentage cleaning |
+| **REST/JSON APIs** (Ch. 11, 13) | `httr2` request building, `req_retry()`, `req_throttle()`, `fromJSON()` | INE EPA unemployment (Table 65349) and foreign population series; Wayback Machine CDX API for URL discovery |
+| **Paginated scraping** (Ch. 6) | `Sys.sleep()`, loop-based page collection, `bind_rows()` | El País zero-indexed topic pagination (`/noticias/inmigracion/N/`); La Moncloa ministry × year CDX iteration |
+| **Ethical scraping** (Ch. 1) | `robotstxt`, `User-Agent`, polite delays | `robots.txt` check on La Moncloa; randomised 3–5 s delays between fetches; UC3M contact in all User-Agent strings |
+
+## Challenges Encountered and Solutions
+
+Throughout the project, several data access problems required us to rethink our original approach. We document these below because they illustrate core challenges in real-world data harvesting and how the techniques from the course helped us work around them.
+
+| Challenge | Original Plan | What Happened | Solution |
+|-----------|--------------|---------------|----------|
+| La Moncloa JavaScript filtering | Scrape the index page directly with `rvest` | The `Anyo=` and `Mes=` URL parameters are processed by client-side JavaScript (SharePoint). The server returns the same page regardless of parameters — `read_html()` always shows today's press releases | Used the Wayback Machine CDX API to discover historical URLs externally, then fetched the live La Moncloa pages directly by URL |
+| Wikipedia image headers | Use `html_table()` to extract polling data | Party column headers are `<img>` logos, not text. `html_table()` returns empty column names for PP, PSOE, Vox, Sumar | Extracted party names via XPath `img/@alt` attributes and rebuilt the table manually row by row |
+| INE API volume limits | Fetch foreign population from Table 9683 with nationality filter | The filtered endpoint returns HTTP 500 ("volume restriction") when too many series match | Fetched two individual series (total population CP305495 and Spanish population CP305423) and computed foreign = total − Spanish |
+| CIS data access | Use CIS Barómetro as primary poll source | CIS publishes monthly PDFs with 2–3 month delays; the web interface uses JavaScript-rendered tables invisible to `rvest` | Switched to Wikipedia, which aggregates 15+ polling firms with weekly updates in static HTML tables |
+| El País search | Use the newspaper's search feature | El País's internal search returns 404 for programmatic requests (bot detection or JavaScript dependency) | Used the static topic page (`/noticias/inmigracion/`) which paginates cleanly with zero-indexed URL parameters |
+| RSelenium reproducibility | Use RSelenium for dynamic pages | RSelenium requires a running Java/ChromeDriver server. This creates a dependency that would fail on Patricia's machine (violating the reproducibility requirement) | Redesigned all scrapers to use `rvest` + `httr2` only — no browser automation required |
 
 ---
 
@@ -642,13 +673,13 @@ desc_stats |>
 
 **Key observations:**
 
-- **PSOE** averaged **27.2%** (SD = 1.6 pp) across the period, consistently below PP's **30.3%** ,a wider gap than at the 2023 election (PSOE 31.7% vs. PP 33.0%; 1.3 pp margin), as PSOE polling deteriorated further. The gap widened over time.
-- **Government immigration statements** averaged **2.25/month** (range: 0–8), with the highest activity in February 2025 (EU Asylum Pact implementation) and summer months (Operación Paso del Estrecho ,the annual migration monitoring operation across the Strait of Gibraltar).
-- **El País immigration articles** averaged **128/month** (range: 51–208), with two pronounced peaks: July 2024 (Atlantic route surge) and October–November 2025 (regularisation legislative process).
+- **PSOE** averaged **27.2%** (SD = 1.6 pp) across the period, consistently below PP's **30.2%** ,a wider gap than at the 2023 election (PSOE 31.7% vs. PP 33.0%; 1.3 pp margin), as PSOE polling deteriorated further. The gap widened over time.
+- **Government immigration statements** averaged **2.3/month** (range: 0–8), with the highest activity in February 2025 (EU Asylum Pact implementation) and June 2025 (regularisation decree debate).
+- **El País immigration articles** averaged **~130/month** (range: 51–208), with two pronounced peaks: July 2024 (Atlantic route surge) and October–November 2025 (regularisation legislative process).
 
 ## Government Communication Over Time
 
-```{r plot-statements, fig.height=5, fig.cap="Figure 2. Official immigration press releases by responsible ministry, November 2023 – February 2026 (N = 63 releases). Ministerio del Interior covers border control and asylum; Inclusión covers migration policy; Exteriores covers EU and bilateral agreements."}
+```{r plot-statements, fig.height=5, fig.cap="Figure 2. Official immigration press releases by responsible ministry, November 2023 – February 2026 (N = 64 unique releases). Ministerio del Interior covers border control and asylum; Inclusión covers migration policy; Exteriores covers EU and bilateral agreements."}
 
 stmts |>
   mutate(year_month = floor_date(date, "month")) |>
@@ -675,7 +706,7 @@ stmts |>
   scale_y_continuous(breaks = 0:10, expand = expansion(mult = c(0, 0.12))) +
   labs(
     title    = "Government Immigration Communication by Ministry",
-    subtitle = "63 verified press releases · November 2023 – February 2026 · Source: La Moncloa (Wayback CDX API)",
+    subtitle = "64 unique press releases · November 2023 – February 2026 · Source: La Moncloa (Wayback CDX API)",
     x = NULL, y = "Releases per month",
     caption  = "Collection method: CDX URL discovery → slug keyword filter → full-text body validation"
   )
@@ -683,7 +714,7 @@ stmts |>
 
 ## PSOE Polling Trajectory and Immigration Communication
 
-```{r plot-timeline, fig.height=6, fig.cap="Figure 3. PSOE and PP monthly polling averages alongside government immigration communication intensity, November 2023 – February 2026. Shaded background regions mark months with at least one official press release; point size reflects statement count. Source: Wikipedia polls (N = 421 raw polls); La Moncloa press archive."}
+```{r plot-timeline, fig.height=6, fig.cap="Figure 3. PSOE and PP monthly polling averages alongside government immigration communication intensity, November 2023 – February 2026. Shaded background regions mark months with at least one official press release; point size reflects statement count. Source: Wikipedia polls (N = 429 raw polls); La Moncloa press archive."}
 
 timeline_data <- polls |>
   left_join(mstmts, by = "year_month") |>
@@ -737,7 +768,7 @@ ggplot(timeline_data, aes(x = year_month)) +
     subtitle = "Shaded months: at least one official La Moncloa immigration press release · Point size: statement count",
     x = NULL, y = "Voting intention (%)",
     size     = "Releases\nper month",
-    caption  = "Sources: Wikipedia opinion polls (421 polls, 28 monthly averages); La Moncloa press archive (63 confirmed releases)"
+    caption  = "Sources: Wikipedia opinion polls (429 polls, 28 monthly averages); La Moncloa press archive (64 unique releases)"
   )
 ```
 
@@ -769,7 +800,7 @@ salience |>
                       " articles in ",
                       format(salience$year_month[which.max(salience$n_immigration)], "%B %Y"), ")"),
     x = NULL, y = "Salience index (0–100)",
-    caption  = "Source: El País /noticias/inmigracion/ topic page ,3,597 article records scraped via pagination"
+    caption  = "Source: El País /noticias/inmigracion/ topic page, 3,634 article records scraped via pagination"
   )
 ```
 
@@ -812,14 +843,27 @@ ggcorrplot(
 **Key correlation findings:**
 
 ```{r corr-interpretation-table, echo=FALSE}
+# Read correlations dynamically from the computed matrix
+corr_wide <- corr_long |> pivot_wider(names_from = var2, values_from = r)
+get_r <- function(v1, v2) {
+  val <- corr_long |> filter(var1 == v1, var2 == v2) |> pull(r)
+  if (length(val) == 0) NA_real_ else val
+}
+r_psoe_pp   <- get_r("PSOE %", "PP %")
+r_psoe_imm  <- get_r("PSOE %", "Imm. media volume")
+r_vox_imm   <- get_r("Vox %",  "Imm. media volume")
+r_pp_imm    <- get_r("PP %",   "Imm. media volume")
+r_psoe_stmt <- get_r("PSOE %", "Gov. statements")
+r_vox_stmt  <- get_r("Vox %",  "Gov. statements")
+
 tribble(
   ~Pair, ~r,       ~Interpretation,
-  "PSOE % ↔ PP %",              "+0.722", "Both trend together (shared macroeconomic environment and coalition dynamics)",
-  "PSOE % ↔ Imm. media volume", "**−0.674**", "Higher immigration coverage → lower PSOE support. Consistent with issue-ownership theory: immigration benefits right-leaning parties",
-  "Vox % ↔ Imm. media volume",  "+0.448", "Immigration salience positively tracks Vox support ,the opposition most credibly 'owning' the immigration issue",
-  "PP % ↔ Imm. media volume",   "−0.597", "PP (main opposition party) also polls lower when immigration is highly salient, but less so than PSOE ,consistent with immigration being a 'double-edged' issue that reflects poorly on the incumbent regardless of which party raises it",
-  "PSOE % ↔ Gov. statements",   "+0.047", "Near-zero; official La Moncloa communications do not covary with PSOE support at the monthly level",
-  "Vox % ↔ Gov. statements",    "−0.246", "Slight negative; higher government engagement may slightly displace Vox's rhetorical space"
+  "PSOE % ↔ PP %",              sprintf("+%.3f", r_psoe_pp), "Both trend together (shared macroeconomic environment and coalition dynamics)",
+  "PSOE % ↔ Imm. media volume", sprintf("**%.3f**", r_psoe_imm), "Higher immigration coverage → lower PSOE support. Consistent with issue-ownership theory: immigration benefits right-leaning parties",
+  "Vox % ↔ Imm. media volume",  sprintf("+%.3f", r_vox_imm), "Immigration salience positively tracks Vox support ,the opposition most credibly 'owning' the immigration issue",
+  "PP % ↔ Imm. media volume",   sprintf("%.3f", r_pp_imm), "PP (main opposition party) also polls lower when immigration is highly salient, but less so than PSOE ,consistent with immigration being a 'double-edged' issue that reflects poorly on the incumbent regardless of which party raises it",
+  "PSOE % ↔ Gov. statements",   sprintf("+%.3f", r_psoe_stmt), "Near-zero; official La Moncloa communications do not covary with PSOE support at the monthly level",
+  "Vox % ↔ Gov. statements",    sprintf("%.3f", r_vox_stmt), "Slight negative; higher government engagement may slightly displace Vox's rhetorical space"
 ) |>
   kbl_proj(
     caption = "Table 8. Key pairwise correlations and interpretations",
@@ -827,7 +871,7 @@ tribble(
   )
 ```
 
-The PSOE/immigration media salience correlation (r = −0.674) is this study's most policy-relevant descriptive finding. It aligns with the **issue-ownership theory** (Petrocik, 1996; Egan, 2013): when immigration becomes more salient, voters tend to recall which party they associate with credible control and border security (PP and Vox), disadvantaging parties associated with progressive or permissive governance (PSOE). This mechanism operates through *agenda*-setting, not through persuasion.
+The PSOE/immigration media salience correlation (r = `r sprintf("%.3f", r_psoe_imm)`) is this study's most policy-relevant descriptive finding. It aligns with the **issue-ownership theory** (Petrocik, 1996; Egan, 2013): when immigration becomes more salient, voters tend to recall which party they associate with credible control and border security (PP and Vox), disadvantaging parties associated with progressive or permissive governance (PSOE). This mechanism operates through *agenda*-setting, not through persuasion. **Caveat:** Because both PSOE polling and immigration salience share a temporal trend (PSOE declining, salience rising), part of this raw correlation may reflect a shared time trend rather than a direct causal link. The OLS regression (Section 4.4) controls for this by including a time trend, after which the salience coefficient is only marginally significant (p ≈ 0.10).
 
 ## Cross-Correlation and Granger Causality
 
@@ -914,7 +958,7 @@ if (!is.null(granger_stmts) && !is.null(granger_sal)) {
 }
 ```
 
-**Interpretation:** Neither government immigration statements (F = 0.147, p = 0.864) nor immigration media salience (F = 0.304, p = 0.741) Granger-causes PSOE polling changes. This formally confirms H1 is not supported and that La Moncloa's immigration communications are **reactive to the political cycle**, not leading indicators of public opinion.
+**Interpretation:** Neither government immigration statements (F = 0.138, p = 0.872) nor immigration media salience (F = 0.342, p = 0.714) Granger-causes PSOE polling changes. This formally confirms H1 is not supported and that La Moncloa's immigration communications are **reactive to the political cycle**, not leading indicators of public opinion.
 
 ## Rolling Window Correlation Analysis
 
@@ -958,13 +1002,13 @@ ggplot(roll_data |> filter(!is.na(roll_corr)),
                      labels = label_number(accuracy = 0.01)) +
   labs(
     title    = "Rolling Correlation: PSOE Voting Intention vs. Immigration Salience",
-    subtitle = sprintf("6-month rolling window · Shaded band = 95%% significance threshold (|r| > %.2f, df = 4) · Consistently negative", ci_roll),
+    subtitle = sprintf("6-month rolling window · Shaded band = 95%% significance threshold (|r| > %.2f, df = 4) · Predominantly negative", ci_roll),
     x = NULL, y = "Pearson r (rolling 6-month window)",
     caption  = "Each point is Pearson r over the 6 preceding months (full window of 6 required; earlier months are NA). Threshold: |r| > 0.73 significant at α = 0.05 (t-test, df = 4)"
   )
 ```
 
-**Interpretation:** The rolling correlation is consistently negative across all windows, with slight deepening toward the end of the study period (coinciding with the regularisation debate). This stability supports a **structural rather than episodic** relationship between immigration salience and PSOE polling ,the effect is not driven by a single event.
+**Interpretation:** The rolling correlation between PSOE voting intention and immigration media salience is highly unstable across the study period, switching sign multiple times rather than maintaining a consistent direction. It begins positive (reaching +0.63 in Spring 2024), reverses sharply negative by Autumn 2024, recovers again to +0.75 in early 2025, before declining into persistent negative territory from mid-2025 onward.  declining into persistent negative territory from mid-2025 onward.
 
 ## OLS Regression Analysis
 
@@ -1049,7 +1093,7 @@ model_coef |>
   )
 ```
 
-```{r plot-regression-coefs, fig.height=4, fig.cap="Figure 8. OLS Model M3 coefficient plot with Newey-West HAC robust confidence intervals. Thick bars = 90% CI (±1.645 × NW SE); thin bars = 95% CI (OLS standard intervals). The time trend is the only predictor significant at p < 0.05; immigration salience reaches marginal significance (p = 0.084); government statements are not significant (p = 0.763)."}
+```{r plot-regression-coefs, fig.height=4, fig.cap="Figure 8. OLS Model M3 coefficient plot with Newey-West HAC robust confidence intervals. Thick bars = 90% CI (±1.645 × NW SE); thin bars = 95% CI (OLS standard intervals). The time trend is the only predictor significant at p < 0.05; immigration salience reaches marginal significance (p ≈ 0.10); government statements are not significant (p = 0.763)."}
 
 nw_p_vals <- nw_se_m3[, "Pr(>|t|)"]
 nw_se_vals <- nw_se_m3[, "Std. Error"]
@@ -1104,9 +1148,9 @@ ggplot(coef_plot_data,
 
 **Interpretation:**
 
-- **Time trend: −0.138 pp/month (p < 0.001)** ,The dominant predictor. PSOE support fell by approximately **0.14 pp per month**, accumulating to −3.9 pp over 28 months (~1.7 pp per year). This is consistent with international patterns of mid-term governmental attrition (Erikson, 1988; Nannestad & Paldam, 1994): incumbent parties regularly lose ~1–2 pp per year during a term, even absent specific crises.
+- **Time trend: −0.142 pp/month (p < 0.001)** ,The dominant predictor. PSOE support fell by approximately **0.14 pp per month**, with an observed cumulative decline of ~3.3 pp over 28 months (~1.4 pp per year). This is consistent with international patterns of mid-term governmental attrition (Erikson, 1988; Nannestad & Paldam, 1994): incumbent parties regularly lose ~1–2 pp per year during a term, even absent specific crises.
 
-- **Immigration media salience: −0.015 pp per normalised unit (p = 0.084)** ,Marginally significant (p < 0.10) in the expected direction. A 10-point increase in normalised salience (e.g., from 60 to 70) is associated with −0.15 pp of PSOE support. While the magnitude is modest, the negative direction is robust across all model specifications (M1–M4). The small effect size suggests immigration salience is one of many influences on party support, not the dominant one.
+- **Immigration media salience: −0.014 pp per normalised unit (p ≈ 0.10)** ,Marginally significant (p < 0.10) in the expected direction. A 10-point increase in normalised salience (e.g., from 60 to 70) is associated with −0.14 pp of PSOE support. While the magnitude is modest, the negative direction is robust across all model specifications (M1–M4). The small effect size suggests immigration salience is one of many influences on party support, not the dominant one.
 
 - **Government immigration statements: −0.036 pp/statement (p = 0.763)** ,Not statistically significant. Official communications from La Moncloa do not predict monthly PSOE polling at any conventional significance level. Combined with the Granger test result, this strongly supports the interpretation that La Moncloa communicates *reactively* (responding to media cycles and political pressure) rather than *proactively* (shaping public discourse).
 
@@ -1625,7 +1669,7 @@ if (!is.null(seat_mc_sum)) {
 
 ## Seat Projection ,Key Conclusions
 
-1. **PP leads in all scenarios** by approximately 27–30 seats over PSOE, driven by the long-term PSOE decline documented in Section 4 (−0.138 pp/month OLS trend).
+1. **PP leads in all scenarios** by approximately 27–30 seats over PSOE, driven by the long-term PSOE decline documented in Section 4 (−0.142 pp/month OLS trend).
 
 2. **No single-party majority is feasible** for any party under any scenario. Spain's fragmented multi-party system requires coalition building.
 
@@ -1774,20 +1818,20 @@ if (!is.null(hist_polls) && nrow(hist_polls) > 0) {
 
 The ITS estimates reveal a nuanced picture:
 
-- **Pre-intervention trend**: PSOE was already declining at −0.49 pp/month before the regularisation ,a structural mid-term attrition identical in sign to the −0.138 pp/month decline we observe for 2023–2026.
+- **Pre-intervention trend**: PSOE was already declining at −0.49 pp/month before the regularisation ,a structural mid-term attrition identical in sign to the −0.142 pp/month decline we observe for 2023–2026.
 
 - **Immediate level change** (intervention coefficient): −1.1 pp at the start of the post-regularisation period, but **not statistically significant** ($p$ = 0.10). The regularisation did not produce a measurable discontinuous shock to PSOE support.
 
 - **Post-intervention slope change**: +0.49 pp/month after June 2005, almost exactly cancelling the pre-intervention decline. PSOE *recovered* once the debate faded ,consistent with the issue-ownership literature finding that policy salience is transient (Petrocik 1996).
 
-**Conclusion**: The 2005 regularisation did not materially harm PSOE's electoral performance. The party recovered once the debate subsided and won the 2008 election with 43.9% ,their strongest result of the 2000s. This historical evidence suggests that PSOE's risk in 2026–2027 stems primarily from **structural mid-term decline** (the ongoing −0.138 pp/month trend), not from the regularisation itself.
+**Conclusion**: The 2005 regularisation did not materially harm PSOE's electoral performance. The party recovered once the debate subsided and won the 2008 election with 43.9% ,their strongest result of the 2000s. This historical evidence suggests that PSOE's risk in 2026–2027 stems primarily from **mid-term decline** (the ongoing −0.142 pp/month trend), not from the regularisation itself.
 
 ```{r zapatero-comparison-table, echo=FALSE}
 tribble(
   ~Indicator,                      ~`Zapatero 2005`,           ~`Sánchez 2026`,
   "Regularisation size",           "~700 000 applications",    "~500 000–800 000 estimated",
   "PSOE pre-event support",        "~42% (post-2004 election)", "~29% (Nov 2023 baseline)",
-  "Pre-event trend (pp/month)",    "−0.49",                    "−0.138",
+  "Pre-event trend (pp/month)",    "−0.49",                    "−0.142",
   "Immediate poll shock",          "−1.1 pp (not significant)", "TBD ,application open 2026",
   "PP counter-campaign",           "Rajoy vs. regularisation",  "Feijóo vs. ILP",
   "Election outcome",              "PSOE won 2008: 43.9%",     paste0("PSOE projected: ~", fc_neutral_pt, "% (2027)"),
@@ -1801,7 +1845,7 @@ tribble(
   column_spec(1, bold = TRUE, width = "30%")
 ```
 
-> **The critical difference**: Zapatero entered the 2005 regularisation at 42% ,enough buffer to absorb a temporary decline and recover to 43.9% in 2008. Sánchez enters 2026 at approximately 29%, with the structural decline leaving him at a projected ~`r fc_neutral_pt`% by June 2027 regardless of regularisation scenario. **The historical precedent is encouraging for the policy but does not offset the structural mid-term decline (−0.138 pp/month) documented in this analysis.**
+> **The critical difference**: Zapatero entered the 2005 regularisation at 42% ,enough buffer to absorb a temporary decline and recover to 43.9% in 2008. Sánchez enters 2026 at approximately 29%, with the structural decline leaving him at a projected ~`r fc_neutral_pt`% by June 2027 regardless of regularisation scenario. **The historical precedent is encouraging for the policy but does not offset the structural mid-term decline (−0.142 pp/month) documented in this analysis.**
 
 ---
 
@@ -1837,11 +1881,11 @@ This study provides the first systematic quantitative analysis linking Spanish g
 
 **Empirical contributions:**
 
-1. **PSOE attrition is structural, not immigration-driven.** The −0.138 pp/month time trend (R² = 0.695 for the trend-only model) is consistent with international mid-term governmental attrition patterns and persists regardless of immigration salience or statement intensity.
+1. **PSOE attrition is driven by time trend, not immigration.** The −0.142 pp/month time trend (R² = 0.706 for the trend-only model) is consistent with international mid-term governmental attrition patterns and persists regardless of immigration salience or statement intensity.
 
-2. **Immigration salience matters at the margins.** The persistent negative rolling correlation (r ≈ −0.67 throughout the period) and the marginally significant OLS coefficient (β = −0.015, p = 0.084) suggest immigration media salience has a small but consistent depressing effect on PSOE support. A month at maximum salience reduces predicted PSOE by ~1.5 pp ,modest but directionally consistent across all specifications.
+2. **Immigration salience matters at the margins.**  The relationship between immigration media salience and PSOE voting intention is episodic and context-dependent, not structural. Immigration salience appears to have meaningfully depressed PSOE support only once the regularisation became the dominant political frame — before that, the relationship was too unstable to support any directional conclusion.
 
-3. **Government communications are reactive, not strategic.** Neither cross-correlation nor Granger causality tests find any evidence that La Moncloa press releases precede polling changes (F = 0.147, p = 0.864). The communication strategy responds to the news cycle; it does not shape it.
+3. **Government communications are reactive, not strategic.** Neither cross-correlation nor Granger causality tests find any evidence that La Moncloa press releases precede polling changes (F = 0.138, p = 0.872). The communication strategy responds to the news cycle; it does not shape it.
 
 4. **The 2026 regularisation is a polarizing political signal, not an electoral mobilization tool.** Zero of the ~500,000 newly regularised migrants can vote in the 2027 General Election. Its electoral impact ,sustained immigration salience, base mobilization on the left, attack vectors on the right ,is captured in the High Salience scenario, which adds only ~0.3 pp of additional PSOE decline relative to neutral.
 
@@ -1859,7 +1903,7 @@ All data, scripts, and this report are version-controlled in a GitHub repository
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/uc3m-dataharvesting/spain-immigration-project
+git clone https://github.com/ATadmuri-hub/Data-Harvesting-uc3m-2026.git
 
 cd spain-immigration-project
 
@@ -1875,13 +1919,13 @@ Rscript -e "rmarkdown::render('report.Rmd')"
 ```{r outputs-table, echo=FALSE}
 tribble(
   ~File,                                   ~Records, ~Description,
-  "`data/raw/lamoncloa_raw.csv`",          "1,078",  "All CDX-discovered La Moncloa press release URLs",
-  "`data/raw/polls_raw.csv`",              "421",    "All Wikipedia opinion poll rows (raw)",
-  "`data/raw/ine_demographics_raw.csv`",   "212+",   "INE provincial unemployment + foreign population (combined)",
-  "`data/raw/elpais_headlines_raw.csv`",   "3,597+", "El País immigration + España article records",
-  "`data/processed/immigration_statements.csv`", "63", "Confirmed La Moncloa immigration releases (with full text)",
+  "`data/raw/lamoncloa_raw.csv`",          "1,102",  "All CDX-discovered La Moncloa press release URLs",
+  "`data/raw/polls_raw.csv`",              "429",    "All Wikipedia opinion poll rows (raw)",
+  "`data/raw/ine_demographics_raw.csv`",   "215+",   "INE provincial unemployment + foreign population (combined)",
+  "`data/raw/elpais_headlines_raw.csv`",   "3,634",  "El País immigration + España article records",
+  "`data/processed/immigration_statements.csv`", "64", "Confirmed La Moncloa immigration releases (case-insensitive dedup, with full text)",
   "`data/processed/monthly_statements.csv`","28",   "Monthly government immigration statement counts",
-  "`data/processed/monthly_polls.csv`",   "28",    "Monthly PSOE/PP/Vox/Sumar poll averages (from 421 polls)",
+  "`data/processed/monthly_polls.csv`",   "28",    "Monthly PSOE/PP/Vox/Sumar poll averages (from 429 polls)",
   "`data/processed/salience_scores.csv`", "28",    "Monthly El País immigration media salience metrics",
   "`data/processed/master_panel.csv`",    "28",    "Full merged analysis panel (18 variables)",
   "`data/processed/model_results.csv`",   "4",     "OLS M3 coefficient table (Newey-West SEs)",
